@@ -2,8 +2,12 @@
 import re
 import time 
 import string 
+import os
 import xlrd
+import xlwt
+# from pyExcelerator import *
 import BuyItem
+from xlutils.copy import copy;  
 
 #########################################
 # 初始化数据
@@ -59,7 +63,7 @@ Talkint_Step 						= {
 		{
 			'talking_content'	:"请输入大区完整名称" + "\r\n" + "如:龙门客栈",
 			'next_by_replay'		:0,
-			'replay_content_limit'	:['龙门客栈' , '龙门客栈'],
+			'replay_content_limit'	:['1' , '龙门客栈' , '龙门客栈'],
 			'next_step'				:(3 , 1),
 			'wrong_jump_to_next'	:(2 , 1),
 			'calculate_price'		:0,
@@ -103,7 +107,35 @@ Talkint_Step 						= {
 
 #########################################
 # 逻辑处理
-# < 2 > 继续对话
+# < 3 > 
+# 存储购买数据到Excel
+def record_purchase_record( strUserName , strItemList , nMsgTime ):
+  # 1. 打开Excel文件
+  bk        = xlrd.open_workbook('Record.xls' , formatting_info=True)
+  shxrange  = range(bk.nsheets)
+  try:
+   sh       = bk.sheet_by_name("Sheet1")
+  except:
+   sh 		= bk.add_sheet('Sheet 1')
+   print ("no sheet in %s named Sheet1" % file)
+
+  # 2. 获取行数和列数
+  nrows     = sh.nrows
+
+  print('record_purchase_record ---- >' + str(nrows))
+
+  # 3. 在新的一行中写入数据
+  newWb		= copy(bk); 
+  newWs		= newWb.get_sheet(0); 
+  newWs.write(nrows, 0, label = str(strUserName))
+  newWs.write(nrows, 1, label = str(strItemList)) 
+  newWs.write(nrows, 2, label = str(nMsgTime)) 
+  newWs.write(nrows, 3, label = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))) 
+  newWb.save('Record.xls')
+
+
+# < 2 > 
+# 继续对话
 # 判断目标聊天步骤是否正常
 def check_step( nFirstStep , nSecondStep ):
 	if str(nFirstStep) not in Talkint_Step:
@@ -147,8 +179,6 @@ def get_after_handle_error_step( nFirstStep , nSecondStep ):
 # 有朋友与自己继续对话
 def get_next_step( strStepList , szTalkingContent ):
 	print('User:get_next_step -- Begin')
-	print(szTalkingContent)
-	print(strStepList)
 
 	# 1. 获取当前的聊天步骤
 	nFirstStep				= strStepList['first_step']
@@ -195,7 +225,11 @@ def reset_talking_step(szFriendName):
 
 
 # 有朋友与自己对话
-def friend_talk_to_me(szFriendName , szTalkingContent , nMsgTime):
+def friend_talk_to_me(  strMsgData ):
+  szFriendName 		= strMsgData['FromUserName']
+  szTalkingContent	= strMsgData['msg_content']
+  nMsgTime			= strMsgData['msg_time']
+
   # 1. 如果玩家之前没有跟自己说过话
   if szFriendName not in UserList:
   	UserList[szFriendName]							= {}
@@ -224,8 +258,13 @@ def friend_talk_to_me(szFriendName , szTalkingContent , nMsgTime):
 
   	# 2_3. 如果玩家的内容需要计算
   	if Talkint_Step[str(strData[1])][str(strData[2])]['calculate_price'] == 1:
+
+  		# 2_3_1. 获取结算内容
   		strItemAnswer 	= BuyItem.analysis_data(szTalkingContent)
   		szAnswer 		= szAnswer + strItemAnswer[1]
+
+  		# 2_3_2. 记录结算数据
+  		record_purchase_record(strMsgData['szUserName'] , strItemAnswer[2] , nMsgTime)
 
   # 3. 如果下一步聊天异常
   else:

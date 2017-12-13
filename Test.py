@@ -25,12 +25,29 @@ def handle_receive_msg(msg):
     msg_id = msg['MsgId']    #每条信息的id
     msg_content = None      #储存信息的内容
     msg_share_url = None    #储存分享的链接，比如分享的文章和音乐
-    print (msg['Type'])
-    print (msg['MsgId'])
+    # print('handle_receive_msg ---- >Log Test : Begin')
+    # print (msg)
+    # print (msg_time_rec)
+    # print (msg['Type'])
+    # print (msg['MsgId'])
+    # print (msg['User']['RemarkName'])
+    # print('handle_receive_msg ---- >Log Test : End')
     if msg['Type'] == 'Text' or msg['Type'] == 'Friends':     #如果发送的消息是文本或者好友推荐
         msg_content = msg['Text']
 
-        strAnswer = Main.friend_talk_to_me(msg['FromUserName'] , msg_content , msg_time)
+        # 获取对方的名字(如果有备注的话则记录备注)
+        szUserName      = msg['User']['NickName']
+        if 'RemarkName' in msg['User'] and msg['User']['RemarkName'] != '':
+            szUserName  = msg['User']['RemarkName']
+
+        # 获取回复内容
+        strData                 = {}
+        strData['szUserName']   = szUserName
+        strData['FromUserName'] = msg['FromUserName']
+        strData['msg_content']  = msg_content
+        strData['msg_time']     = msg_time
+
+        strAnswer = Main.friend_talk_to_me(strData)
         itchat.send( strAnswer , msg['FromUserName'])
         
         print (msg_content)
@@ -108,6 +125,18 @@ def information(msg):
             # 删除字典旧消息
             msg_information.pop(old_msg_id)
 
-itchat.auto_login(hotReload=False)
+@itchat.msg_register(TEXT, isGroupChat=True)
+def text_reply(msg):
+    if msg.isAt:
+        msg.user.send(u'@%s\u2005I received: %s' % (
+            msg.actualNickName, msg.text))
+
+itchat.auto_login(hotReload=True)
 Main.main()
 itchat.run()
+
+# newInstance = itchat.new_instance()
+# newInstance.auto_login(hotReload=True, statusStorageDir='newInstance.pkl')
+
+# newInstance.run()
+

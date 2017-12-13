@@ -52,6 +52,7 @@ def analysis_data(content):
   c = b.findall(new_string)
   nAllCost = 0
   send_msg = ''
+  strItemDetial   = {}
   for i in  c:
 
     # 3. 获取单个商品的信息
@@ -60,11 +61,19 @@ def analysis_data(content):
     # 4. 拼接字符串
     # 4_1. 如果物品有单价
     if nCost > 0:
-     szSingleContent   = szName + ' : ' + str(nCost) + ' * ' + str(nBuyCount) + "\r\n"
 
-    # 4_2. 如果物品没有单间
+      # 4_1_1. 回复内容拼接
+      szSingleContent   = szName + ' : ' + str(nCost) + ' * ' + str(nBuyCount) + "\r\n"
+
+      # 4_1_2. 记录玩家购买数据
+      if szName not in strItemDetial:
+        strItemDetial[szName] = 0
+
+      strItemDetial[szName] = strItemDetial[szName] + nBuyCount
+
+    # 4_2. 如果物品没有单价
     else:
-     szSingleContent   = szName + ' : ' + '暂无此产品!' + "\r\n"
+      szSingleContent   = szName + ' : ' + '暂无此产品!' + "\r\n"
 
     # 5. 拼接总的字符串
     send_msg          = send_msg + szSingleContent
@@ -73,7 +82,7 @@ def analysis_data(content):
     nAllCost          = nBuyCount * nCost + nAllCost
 
   send_msg            = send_msg + "总计 : " + str(nAllCost)
-  return (nAllCost , send_msg)
+  return (nAllCost , send_msg , strItemDetial)
 
 
 # 读取Excel

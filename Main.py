@@ -27,8 +27,8 @@ def main():
 
 
 # 有朋友与自己对话
-def friend_talk_to_me( szFriendName , szTalkingContent , nMsgTime ):
-  strAnswer = User.friend_talk_to_me(szFriendName , szTalkingContent , nMsgTime)
+def friend_talk_to_me( strData ):
+  strAnswer = User.friend_talk_to_me(strData)
   return strAnswer
 
 
