@@ -30,7 +30,7 @@ def handle_receive_msg(msg):
     if msg['Type'] == 'Text' or msg['Type'] == 'Friends':     #如果发送的消息是文本或者好友推荐
         msg_content = msg['Text']
 
-        strAnswer = Main.friend_talk_to_me(msg['FromUserName'] , msg_content)
+        strAnswer = Main.friend_talk_to_me(msg['FromUserName'] , msg_content , msg_time)
         itchat.send( strAnswer , msg['FromUserName'])
         
         print (msg_content)
