@@ -120,7 +120,7 @@ def excel_table_byindex(file= 'Test.xlsx'):
 def Init():
   # 1. 解析Excel文件
   excel_table_byindex()
-  print(ItemList)
+  # print(ItemList)
   print('BuyItem:Init')
 
 

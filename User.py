@@ -4,7 +4,7 @@ import time
 import string 
 import os
 import xlrd
-import xlwt
+from xlwt import *
 # from pyExcelerator import *
 import BuyItem
 from xlutils.copy import copy;  
@@ -108,30 +108,51 @@ Talkint_Step 						= {
 #########################################
 # 逻辑处理
 # < 3 > 
+# 获取当前日期的字符串
+def get_cur_date():
+  return str(time.strftime("%Y-%m-%d", time.localtime()))
+
+# 创建新的工作文本
+def creat_new_work_excel( szFileName , szSheetName ):
+  w 	= Workbook()
+  ws 	= w.add_sheet(szSheetName)
+  ws.write(0, 0, label = '对方名字')
+  ws.write(0, 1, label = '商品信息') 
+  ws.write(0, 2, label = '信息发送的时间') 
+  ws.write(0, 3, label = '系统处理时间')
+  w.save(szFileName)
+
 # 存储购买数据到Excel
 def record_purchase_record( strUserName , strItemList , nMsgTime ):
-  # 1. 打开Excel文件
-  bk        = xlrd.open_workbook('Record.xls' , formatting_info=True)
+  # 1. 获取文件名字
+  szCurDate 	= get_cur_date()
+  szFileName 	= szCurDate + '.xls'
+  szSheetName 	= 'Sheet1'
+
+  # 2. 如果目标文件不存在则创建文件
+  if not os.path.isfile(szFileName):
+  	creat_new_work_excel(szFileName , szSheetName)
+
+  # 2. 打开Excel文件
+  bk        = xlrd.open_workbook(szFileName , formatting_info=True)
   shxrange  = range(bk.nsheets)
   try:
-   sh       = bk.sheet_by_name("Sheet1")
+   sh       = bk.sheet_by_name(szSheetName)
   except:
-   sh 		= bk.add_sheet('Sheet 1')
+   sh 		= bk.add_sheet(szSheetName)
    print ("no sheet in %s named Sheet1" % file)
 
-  # 2. 获取行数和列数
+  # 3. 获取行数和列数
   nrows     = sh.nrows
 
-  print('record_purchase_record ---- >' + str(nrows))
-
-  # 3. 在新的一行中写入数据
-  newWb		= copy(bk); 
-  newWs		= newWb.get_sheet(0); 
-  newWs.write(nrows, 0, label = str(strUserName))
-  newWs.write(nrows, 1, label = str(strItemList)) 
-  newWs.write(nrows, 2, label = str(nMsgTime)) 
-  newWs.write(nrows, 3, label = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))) 
-  newWb.save('Record.xls')
+  # 4. 在新的一行中写入数据
+  newWb		= copy(bk)
+  newWs		= newWb.get_sheet(0)
+  newWs.write(nrows, 0 , label = str(strData['user_name']))
+  newWs.write(nrows, 1 , label = str(strData['purchase_info'])) 
+  newWs.write(nrows, 2 , label = str(strData['msg_time'])) 
+  newWs.write(nrows, 3 , label = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))) 
+  newWb.save(szFileName)
 
 
 # < 2 > 
@@ -264,7 +285,12 @@ def friend_talk_to_me(  strMsgData ):
   		szAnswer 		= szAnswer + strItemAnswer[1]
 
   		# 2_3_2. 记录结算数据
-  		record_purchase_record(strMsgData['szUserName'] , strItemAnswer[2] , nMsgTime)
+  		strRecordData 					= {}
+  		strRecordData['user_name']		= strMsgData['szUserName']
+  		strRecordData['purchase_info']	= strItemAnswer[2]
+  		strRecordData['msg_time']		= nMsgTime
+
+  		record_purchase_record(strRecordData)
 
   # 3. 如果下一步聊天异常
   else:
