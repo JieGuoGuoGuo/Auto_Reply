@@ -1,0 +1,101 @@
+/*****************************************************************/
+// 初始化
+/*****************************************************************/
+Dim LazyExcel, path, Index, RCount
+Dim File_path
+Dim result
+Dim nLastLine			// 上次处理的行数
+
+nLastLine	= 1
+File_path	= "E:\GitHub\Auyo_Reply\trunk\"
+
+result = Main()
+
+/*****************************************************************/
+//							主  入  口	
+/*****************************************************************/
+Function Main()
+	// 1. 获取函数名字
+	Dim FileName
+	FileName = get_file_name()
+	
+	// 2. 创建临时文件
+	creat_temp_file (FileName)
+	
+	// 3. 读取数据   
+	Dim szTempFilePath
+	szTempFilePath = get_temp_file_path(FileName)
+	Set LazyExcel= CreateObject("Lazy.LxjExcel")
+	Index = LazyExcel.ExcelOpen(szTempFilePath, 0)
+	RCount = LazyExcel.SheetRowsCount(1, Index)
+	Count = LazyExcel.SheetColumnsCount(1, Index)
+	
+	txt=LazyExcel.ExcelRead("Sheet1",1,1,Index)
+	MessageBox "第5行第8列内容为："&txt
+
+
+
+	
+		
+//	For nLineIndex = nLastLine To 10
+//		txt=LazyExcel.ExcelRead(2,nLineIndex,2,Index)
+//		MessageBox "第5行第8列内容为："&txt
+//
+//	Next
+	
+	Main 	= True
+	
+	
+End Function
+
+
+/*****************************************************************/
+// 辅助函数	
+/*****************************************************************/
+// --------------- [[ 获取文件名字 ]] -------------- //
+Function get_file_name()
+	Dim szPath
+	
+	// 1. 获取当前的系统时间
+	nYear 	= Year(Now)
+	nMonth 	= Month(Now)
+	nDay 	= Day(Now)
+	
+	// 2. 拼接名字
+	szPath = nYear & "-" & nMonth & "-" & nDay
+	
+	// 3. 返回结果
+	get_file_name = szPath
+End Function
+
+// --------------- [[ 创建临时文件 ]] -------------- //
+Function creat_temp_file(szFileName)
+	Dim szOriName , szTempName
+	Dim szOriPath , szTempPath
+	
+	
+	// 1. 获取临时文件名字
+	szOriName	= szFileName & ".xls"
+	szTempName	= szFileName & "_Temp.xls"
+	
+	// 2. 获取路径
+	szOriPath 	= File_path & szOriName
+	szTempPath 	= File_path & szTempName
+	
+	// 3. 文件拷贝
+	Call Plugin.File.CopyFile(szOriPath, szTempPath)	
+End Function
+
+// --------------- [[ 获取临时文件路径 ]] -------------- //
+Function get_temp_file_path(szFileName)
+	Dim szTempName , szTempPath	
+	
+	// 1. 获取临时文件名字
+	szTempName			= szFileName & "_Temp.xls"
+	
+	// 2. 获取路径
+	szTempPath 			= File_path & szTempName
+	
+	// 3. 文件拷贝
+	get_temp_file_path 	= szTempPath	
+End Function
