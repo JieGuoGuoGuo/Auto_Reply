@@ -7,7 +7,7 @@ Dim result
 Dim nLastLine			// 上次处理的行数
 
 nLastLine	= 1
-File_path	= "E:\GitHub\Auyo_Reply\trunk\"
+File_path	= "H:\GitHub\Auto_Reply\trunk\"
 
 result = Main()
 
@@ -15,37 +15,11 @@ result = Main()
 //							主  入  口	
 /*****************************************************************/
 Function Main()
-	// 1. 获取函数名字
-	Dim FileName
-	FileName = get_file_name()
-	
-	// 2. 创建临时文件
-	creat_temp_file (FileName)
-	
-	// 3. 读取数据   
-	Dim szTempFilePath
-	szTempFilePath = get_temp_file_path(FileName)
-	Set LazyExcel= CreateObject("Lazy.LxjExcel")
-	Index = LazyExcel.ExcelOpen(szTempFilePath, 0)
-	RCount = LazyExcel.SheetRowsCount(1, Index)
-	Count = LazyExcel.SheetColumnsCount(1, Index)
-	
-	txt=LazyExcel.ExcelRead("Sheet1",1,1,Index)
-	MessageBox "第5行第8列内容为："&txt
-
-
-
-	
-		
-//	For nLineIndex = nLastLine To 10
-//		txt=LazyExcel.ExcelRead(2,nLineIndex,2,Index)
-//		MessageBox "第5行第8列内容为："&txt
-//
-//	Next
-	
-	Main 	= True
+	Dim xxxx
+	xxxx = handle_file()
 	
 	
+	Main 	= True	
 End Function
 
 
@@ -98,4 +72,47 @@ Function get_temp_file_path(szFileName)
 	
 	// 3. 文件拷贝
 	get_temp_file_path 	= szTempPath	
+End Function
+
+
+// --------------- [[ 处理文件 ]] -------------- //
+Function handle_file()
+	// 1. 获取函数名字
+	Dim FileName
+	FileName = get_file_name()
+	
+	// 2. 创建临时文件
+	creat_temp_file (FileName)
+	
+	// 3. 获取临时文件  
+	Dim szTempFilePath
+	szTempFilePath 	= get_temp_file_path(FileName)
+	Set LazyExcel 	= CreateObject("Lazy.LxjExcel")
+	Index = LazyExcel.ExcelOpen(szTempFilePath, 0)
+	
+	// 4. 临时文件的总行数和总列数
+	RowsCount 		= LazyExcel.SheetRowsCount(1, Index)
+	ColumnsCount = LazyExcel.SheetColumnsCount(1, Index)
+	
+	// 5. 如果上次处理的行数跟临时文件一致则不做任何处理
+	If RowsCount = nLastLine Then 
+		Exit Function
+	End If
+	
+	// 5. 遍历文件
+	For nLineIndex = nLastLine To RowsCount
+		For nColumnsIndex = 1 To ColumnsCount
+			txt = LazyExcel.ExcelRead(1, nLineIndex, nColumnsIndex, Index)
+			MessageBox txt
+		Next
+	Next
+	
+	// 6. 处理结束
+	// 6_1. 记录最后一次处理的行数
+	nLastLine = RowsCount
+	MessageBox nLastLine
+	
+	// 6_2. 关闭文件并删除文件
+	Call LazyExcel.ExcelClose(Index)
+	Call Plugin.File.DeleteFile(szTempFilePath)	
 End Function
