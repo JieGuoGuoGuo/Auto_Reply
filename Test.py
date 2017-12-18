@@ -20,7 +20,13 @@ face_bug=None  #针对表情包的内容
 def handle_receive_msg(msg):
     global face_bug
     msg_time_rec = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())   #接受消息的时间
-    msg_from = itchat.search_friends(userName=msg['FromUserName'])['NickName']   #在好友列表中查询发送信息的好友昵称
+
+    #在好友列表中查询发送信息的好友昵称
+    msg_from = itchat.search_friends(userName=msg['FromUserName'])
+    if 'NickName' in msg_from:
+        msg_from = msg_from['NickName'] 
+
+    # msg_from = itchat.search_friends(userName=msg['FromUserName'])['NickName']   
     msg_time = msg['CreateTime']    #信息发送的时间
     msg_id = msg['MsgId']    #每条信息的id
     msg_content = None      #储存信息的内容

@@ -7,6 +7,7 @@ import xlrd
 from xlwt import *
 import BuyItem
 from xlutils.copy import copy;  
+import Talk_Step
 
 #########################################
 # 初始化数据
@@ -17,111 +18,10 @@ TALKING_INTERVAL_TIME 				= 5 * 60
 UserList 							= {}
 
 # 总结文本
-SUMMARIZE_CONTENT 					= "请确认您的购买信息: \r\n" + "大区 	: %s\r\n" + "角色名称: %s\r\n" + "商品信息:\r\n%s" + "\r\n" + "[重新输入]请回复'1'\r\n[确认]请回复'2'\r\n"
+SUMMARIZE_CONTENT 					= "请确认您的购买信息: \r\n" + "大区 	: %s\r\n" + "角色名称: %s\r\n" + "商品信息:\r\n%s"
 
 # 聊天步骤
-# param					next_step
-# 						下一步的聊天步骤,如果replay_content_type为3则下一步聊天步骤的小步骤由玩家输入决定
-
-# param					replay_content_limit
-# 						回复内容约束
-
-# param 				wrong_jump_to_next
-# 						当前对话错误跳转到目标步骤
-
-
-# param 				replay_content_type
-# 						0为普通的聊天回复(不用管),1为商品,2为大区名称,3为下一步的小步骤,4为游戏内角色名称
-
-
-# param					special_handle
-# 						0为无任何特殊处理,1为总结购买信息并在此次对话中回复给玩家,2为记录数据到Excel中
-
-
-Talkint_Step 						= {
-	'0':
-	{
-		'1'					:
-		{
-			'talking_content'		:"",
-			'replay_content_limit'	:'',
-			'next_step'				:(1 , 1),
-			'wrong_jump_to_next'	:(0 , 1),
-			'replay_content_type'	:0,
-			'special_handle'		:0,
-		},
-	},
-	'1':
-	{
-		'1'					:
-		{
-			'talking_content'		:"你好,我休息去了~" + "\r\n" + "[购物]请回复'1'" + "\r\n" + "[聊天]请回复'2'" + "\r\n",
-			'replay_content_limit'	:['1' , '2'],
-			'next_step'				:(2 , 1),
-			'wrong_jump_to_next'	:(1 , 1),
-			'replay_content_type'	:3,
-			'special_handle'		:0,
-		},
-	},
-	'2':
-	{
-		'1'					:
-		{
-			'talking_content'	:"请输入大区完整名称" + "\r\n" + "如:龙门客栈",
-			'replay_content_limit'	:['1' , '龙门客栈' , '龙门客栈'],
-			'next_step'				:(3 , 1),
-			'wrong_jump_to_next'	:(2 , 1),
-			'replay_content_type'	:2,
-			'special_handle'		:0,
-		},
-		
-		'2'					:
-		{
-			'talking_content'	:"聊你妹啊!等我醒了弄死你!",
-			'replay_content_limit'	:'',
-			'next_step'				:(1 , 1),
-			'wrong_jump_to_next'	:(1 , 1),
-			'replay_content_type'	:0,
-			'special_handle'		:0,
-		},
-	},
-	'3':
-	{
-		'1'					:
-		{
-			'talking_content'	:"请输入角色名称:",
-			'replay_content_limit'	:'',
-			'next_step'				:(4 , 1),
-			'wrong_jump_to_next'	:(3 , 1),
-			'replay_content_type'	:4,
-			'special_handle'		:0,
-		}
-	},
-	'4':
-	{
-		'1'					:
-		{
-			'talking_content'	:"请输入需要购买的物品,按照以下格式输入" + "\r\n" + "火浣台 1 官银 100",
-			'replay_content_limit'	:'',
-			'next_step'				:(5 , 1),
-			'wrong_jump_to_next'	:(4 , 1),
-			'replay_content_type'	:1,
-			'special_handle'		:1,
-		}
-	},
-	'5':
-	{
-		'1'					:
-		{
-			'talking_content'	:"",
-			'replay_content_limit'	:'',
-			'next_step'				:(2 , 1),
-			'wrong_jump_to_next'	:(1 , 1),
-			'replay_content_type'	:0,
-			'special_handle'		:2,
-		}
-	},
-}
+Talkint_Step 						= Talk_Step.Talkint_Step
 
 #########################################
 # 逻辑处理
@@ -144,13 +44,18 @@ def creat_new_work_excel( szFileName , szSheetName ):
   ws.write(0, 0, label = '微信名称')
   ws.write(0, 1, label = '大区名称')
   ws.write(0, 2, label = '角色名称')
-  ws.write(0, 3, label = '商品信息') 
-  ws.write(0, 4, label = '上一条微信信息发送的时间') 
-  ws.write(0, 5, label = '系统处理时间')
+  ws.write(0, 3, label = '商品名称') 
+  ws.write(0, 4, label = '商品个数') 
+  ws.write(0, 5, label = '上一条微信信息发送的时间') 
+  ws.write(0, 6, label = '系统处理时间')
   w.save(szFileName)
 
 # 存储购买数据到Excel
 def record_purchase_record(szFriendName):
+  # 1. 如果玩家的物品列表不存在商品信息不做任何处理
+  if 'game_purchase_info' not in UserList[szFriendName] or 'item_list' not in UserList[szFriendName]['game_purchase_info'] or UserList[szFriendName]['game_purchase_info']['item_list'] == '':
+  	return False
+
   # 1. 获取文件名字
   szCurDate 	= get_cur_date()
   szFileName 	= szCurDate + '.xls'
@@ -172,15 +77,20 @@ def record_purchase_record(szFriendName):
   # 3. 获取行数和列数
   nrows     = sh.nrows
 
-  # 4. 在新的一行中写入数据
+  # 4. 在新的一行中写入数据(逐条写入)
   newWb		= copy(bk)
   newWs		= newWb.get_sheet(0)
-  newWs.write(nrows, 0 , label = str(UserList[szFriendName]['wechat_name']))
-  newWs.write(nrows, 1 , label = str(UserList[szFriendName]['game_purchase_info']['service_name'])) 
-  newWs.write(nrows, 2 , label = str(UserList[szFriendName]['game_purchase_info']['role_name'])) 
-  newWs.write(nrows, 3 , label = str(UserList[szFriendName]['game_purchase_info']['item_list'])) 
-  newWs.write(nrows, 4 , label = str(UserList[szFriendName]['msg_time'])) 
-  newWs.write(nrows, 5 , label = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))) 
+
+  for str_item_info in UserList[szFriendName]['game_purchase_info']['item_list']:
+  	newWs.write(nrows, 0 , label = str(UserList[szFriendName]['wechat_name']))
+  	newWs.write(nrows, 1 , label = str(UserList[szFriendName]['game_purchase_info']['service_name'])) 
+  	newWs.write(nrows, 2 , label = str(UserList[szFriendName]['game_purchase_info']['role_name'])) 
+  	newWs.write(nrows, 3 , label = str(str_item_info))
+  	newWs.write(nrows, 4 , label = str(UserList[szFriendName]['game_purchase_info']['item_list'][str_item_info])) 
+  	newWs.write(nrows, 5 , label = str(UserList[szFriendName]['msg_time'])) 
+  	newWs.write(nrows, 6 , label = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))) 
+  	nrows = nrows + 1
+
   newWb.save(szFileName)
 
 
@@ -245,12 +155,17 @@ def get_next_step( strStepList , szTalkingContent ):
 
 	# 3. 根据优先级获取下一步聊天内容
 	strNextStepList			= Talkint_Step[str(nFirstStep)][str(nSecondStep)]['next_step']
-	nNextFirstStep 			= strNextStepList[0]
-	nNextSecondStep 		= strNextStepList[1]
+
+	# 3_2. 如果没有特殊需求则选择默认步骤
+	nNextFirstStep 			= strNextStepList['default'][0]
+	nNextSecondStep 		= strNextStepList['default'][1]
 
 	# 3_1. 如果是根据玩家的回复决定下一步
 	if Talkint_Step[str(nFirstStep)][str(nSecondStep)]['replay_content_type'] == 3:
-		nNextSecondStep		= szTalkingContent
+
+		# 3_1_2. 根据玩家的回复获取下一步内容(回复内容是否在限制列表中,在上面已经处理过)
+		nNextFirstStep 			= strNextStepList[szTalkingContent][0]
+		nNextSecondStep 		= strNextStepList[szTalkingContent][1]
 
 	# 4. 判断下一步聊天步骤是否异常
 	# 4_1. 如果下一步聊天步骤异常
@@ -270,7 +185,7 @@ def get_next_step( strStepList , szTalkingContent ):
 # 重置目标玩家的对话步骤
 def reset_talking_step(szFriendName):
 	UserList[szFriendName]['step'] 					= {}
-	UserList[szFriendName]['step']['first_step'] 	= 1			# 大步骤
+	UserList[szFriendName]['step']['first_step'] 	= 0			# 大步骤
 	UserList[szFriendName]['step']['second_step'] 	= 1			# 小步骤
 
 # 重置目标玩家的游戏购买信息
@@ -359,7 +274,7 @@ def friend_talk_to_me( strMsgData ):
   	# 1_3. 判断玩家当前步骤是否需要特殊处理
   	# 1_3_1. 如果需要总结购买信息并在此次对话中回复给玩家
   	if Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['special_handle'] == 1:
-  		szAnswer = szAnswer + get_summarize_content( szFriendName )
+  		szAnswer = get_summarize_content( szFriendName ) + szAnswer
 
   	# 1_3_2. 如果需要记录数据到Excel中
   	elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['special_handle'] == 2:
