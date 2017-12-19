@@ -37,13 +37,14 @@ Talkint_Step 						= {
 	{
 		'1'					:
 		{
-			'talking_content'		:"你好,我休息去了~" + "\r\n" + "[购物]请回复'1'" + "\r\n" + "[聊天]请回复'2'" + "\r\n",
-			'replay_content_limit'	:['1' , '2'],
+			'talking_content'		:"你好,我休息去了~" + "\r\n" + "[购物]请回复'1'" + "\r\n" + "[聊天]请回复'2'" + "\r\n" + "[比特币]请回复'3'" + "\r\n",
+			'replay_content_limit'	:['1' , '2' , '3'],
 			'next_step'				:
 			{
 				'default'	: (2 , 1),
 				'1'			: (2 , 1),
 				'2'			: (2 , 2),
+				'2'			: (2 , 3),
 			},
 			'wrong_jump_to_next'	:(1 , 1),
 			'replay_content_type'	:3,
@@ -68,6 +69,19 @@ Talkint_Step 						= {
 		'2'					:
 		{
 			'talking_content'	:"聊你妹啊!等我醒了弄死你!",
+			'replay_content_limit'	:'',
+			'next_step'				:
+			{
+				'default'	: (1 , 1),
+			},
+			'wrong_jump_to_next'	:(1 , 1),
+			'replay_content_type'	:0,
+			'special_handle'		:0,
+		},
+
+		'3'					:
+		{
+			'talking_content'	:"功能开发中!",
 			'replay_content_limit'	:'',
 			'next_step'				:
 			{

@@ -24,7 +24,7 @@ def handle_receive_msg(msg):
 
     #在好友列表中查询发送信息的好友昵称
     msg_from = itchat.search_friends(userName=msg['FromUserName'])
-    if 'NickName' in msg_from:
+    if msg_from is not None and msg_from['NickName'] is not None:
         msg_from = msg_from['NickName'] 
     # msg_from = itchat.search_friends(userName=msg['FromUserName'])['NickName']   
 
@@ -112,8 +112,6 @@ def handle_receive_msg(msg):
 # 监听是否有消息撤回
 @itchat.msg_register(NOTE, isFriendChat=True, isGroupChat=True, isMpChat=True)
 def information(msg):
-    print('----------------------------- >')
-    print (msg)
     #这里如果这里的msg['Content']中包含消息撤回和id，就执行下面的语句
     if '撤回了一条消息' in msg['Content']:
         old_msg_id = re.search("\<msgid\>(.*?)\<\/msgid\>", msg['Content']).group(1)   #在返回的content查找撤回的消息的id
@@ -152,11 +150,75 @@ def text_reply(msg):
             msg.actualNickName, msg.text))
 
 
-# 红包
+# 转账
+mycount = "强迫症的潘胖纸"
+money_receiver = 'filehelper'
 @itchat.msg_register([NOTE])
 def text_reply(msg):
-    print('---------------------------------------> ')
+    pay_type = 0
+    pay_type = re.search(".*\<paysubtype\>(.*?)\<\/paysubtype\>.*", msg['Content']).group(1)
+    touser = itchat.search_friends(userName=msg['ToUserName'])
+    print('msg ------------- >')
     print(msg)
+    print(touser)
+    print(str(touser['NickName'] == mycount))
+    print(str(int(pay_type)))
+    # 这里必须得改成你的微信昵称，用于判断是别人给你转的钱
+    # pay_type是交易类型：1是发送 3是接收
+    if touser['NickName'] == mycount and int(pay_type) == 1:
+        print('Receive Money in ----- >')
+
+        # 获取时间，异常处理
+        try:
+            mytime = time.localtime()  # 这儿获取的是本地时间
+            money_time = mytime.tm_year.__str__() + "/" + mytime.tm_mon.__str__() + "/" + mytime.tm_mday.__str__() + " " + mytime.tm_hour.__str__() + ":" + mytime.tm_min.__str__() + ":" + mytime.tm_sec.__str__()
+        except:
+            None
+
+        if money_time is None:
+            money_time = r"读取时间失败，请手动查询"
+
+        # 获取转账人 转账金额
+        temp_name = itchat.search_friends(userName=msg['FromUserName'])
+        if temp_name['RemarkName'] is not None:  # 备注名优先
+            money_friend = temp_name['RemarkName']
+        elif temp_name['NickName'] is not None:  # 昵称其次
+            money_friend = temp_name['NickName']
+        else:
+            money_friend = r""
+
+        try:
+            money_count = re.search(r"(.*?)收到转账(.*?)元", msg['Text']).group(2)
+        except:
+            None
+
+        if money_friend is None:
+            money_friend = r"读取转账人失败，请手动查询"
+        if money_count is None:
+            money_count = r"读取转账金额失败，请手动查询"
+
+        # 获取转账说明
+        try:
+            money_detial = re.search(".*\<pay_memo\>\<!\[CDATA\[(.*?)\]\].*", msg['Content']).group(1)
+        except:
+            None
+
+        if money_detial is None:
+            money_detial = r"无"
+        try:
+            msg_backup = r"付款人:%s  时间:%s  金额:%s元  付款说明:%s" % (
+                money_friend.__str__(), money_time.__str__(), money_count.__str__(), money_detial.__str__())
+            itchat.send(r"付款人:%s  "
+                        r"时间:%s  "
+                        r"金额:%s元  "
+                        r"付款说明:%s" % (
+                            money_friend.__str__(), money_time.__str__(), money_count.__str__(),
+                            money_detial.__str__()),
+                        toUserName=money_receiver)
+        except:
+            #若消息发送失败，尝试将失败消息发送到文件助手，并输出到控制台
+            itchat.send(r"消息发送失败：" + msg_backup, toUserName='filehelper')
+            print(r"消息发送失败：" + msg_backup)
 
 
 
