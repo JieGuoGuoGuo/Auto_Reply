@@ -195,6 +195,8 @@ def reset_game_purchase_info( szFriendName ):
 	UserList[szFriendName]['game_purchase_info']['service_name']	= ''		# 大区名字
 	UserList[szFriendName]['game_purchase_info']['item_list']		= {}		# 购买商品
 	UserList[szFriendName]['game_purchase_info']['item_answer']		= ''		# 购买商品回复信息
+  UserList[szFriendName]['game_purchase_info']['all_cost']   = 0    # 商品总计应付金额
+  UserList[szFriendName]['game_purchase_info']['friend_pay']   = 0    # 玩家实际支付的金额
 
 
 # 重置玩家的信息
@@ -219,85 +221,137 @@ def reset_friend_info( strData ):
 
 # 有朋友与自己对话
 def friend_talk_to_me( strMsgData ):
-  szWeChatName 		= strMsgData['szUserName']
-  szFriendName 		= strMsgData['FromUserName']
-  szTalkingContent	= strMsgData['msg_content']
-  nMsgTime			= strMsgData['msg_time']
+  szWeChatName 		   = strMsgData['szUserName']
+  szFriendName 		   = strMsgData['FromUserName']
+  szTalkingContent   = strMsgData['msg_content']
+  nMsgTime			     = strMsgData['msg_time']
+  nFriendPay         = 0
+  if strMsgData['friend_pay'] is not None:
+    nFriendPay       = strMsgData['friend_pay']
 
+  szAnswer           = '数据异常,错误步骤 : '
   # 1. 如果玩家之前没有跟自己说过话
   if szFriendName not in UserList:
   	reset_friend_info(strMsgData)
 
   # 2. 如果玩家距离上次对话时间超过间隔时间则重置聊天步骤
   if nMsgTime - UserList[szFriendName]['msg_time'] > TALKING_INTERVAL_TIME:
-  	reset_talking_step(szFriendName)
+  	reset_friend_info(strMsgData)
+  
+  # 3. 判断玩家当前步骤是否记录
+  if UserList[szFriendName]['step'] is None:
+    reset_friend_info(strMsgData)
 
-  # 3. 获取玩家下一个聊天步骤
+  nCurFirstStep   = UserList[szFriendName]['step']['first_step']
+  nCurSecondSetp  = UserList[szFriendName]['step']['second_step']
+
+  # 4. 获取下一步信息
   strData = get_next_step(UserList[szFriendName]['step'] , szTalkingContent)
+  if strData[0] != 1:
+    reset_friend_info(strMsgData)
+    szAnswer         = szAnswer + ' : 1' + str(nCurFirstStep) + '  ' + str(nCurSecondSetp)
+    return szAnswer
 
   # ------------------------------------
   # 条件满足
   szAnswer			= ''
-  nCurFirstStep 	= UserList[szFriendName]['step']['first_step']
-  nCurSecondSetp 	= UserList[szFriendName]['step']['second_step']
 
+  # 1. 获取回复内容
+  szAnswer    = Talkint_Step[str(strData[1])][str(strData[2])]['talking_content']
 
-  # 1. 如果获取下一步聊天步骤正常
-  if strData[0] == 1:
+  # 2. 判断玩家的回复内容是否需要特殊处理
+  # 2_1. 如果玩家的回复内容为商品
+  if Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['replay_content_type'] == 1:
 
-  	# 1_1. 获取回复内容
-  	szAnswer 		= Talkint_Step[str(strData[1])][str(strData[2])]['talking_content']
+    # 2_1_1. 获取结算内容
+    strItemAnswer           = BuyItem.analysis_data(szTalkingContent)
 
-  	# 1_2. 判断玩家的回复内容是否需要特殊处理
-  	# 1_2_1. 如果玩家的回复内容为商品
-  	if Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['replay_content_type'] == 1:
+    # 2_1_2. 记录结算数据
+    UserList[szFriendName]['game_purchase_info']['item_list']   = strItemAnswer[2]
+    UserList[szFriendName]['game_purchase_info']['item_answer']   = strItemAnswer[1]
+    UserList[szFriendName]['game_purchase_info']['all_cost']   = strItemAnswer[0]
 
-  		# 1_2_1_1. 获取结算内容
-  		strItemAnswer 					= BuyItem.analysis_data(szTalkingContent)
+  # 2_2. 如果玩家的回复内容为大区名称,则记录大区名称
+  elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['replay_content_type'] == 2:
+    UserList[szFriendName]['game_purchase_info']['service_name']  = szTalkingContent
 
-  		# 1_2_1_2. 记录结算数据
-  		UserList[szFriendName]['game_purchase_info']['item_list']		= strItemAnswer[2]
-  		UserList[szFriendName]['game_purchase_info']['item_answer']		= strItemAnswer[1]
+  # 2_3. 如果玩家的回复内容为角色名称,则记录游戏内角色名字
+  elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['replay_content_type'] == 4:
+    UserList[szFriendName]['game_purchase_info']['role_name']   = szTalkingContent
 
-  	# 1_2_2. 如果玩家的回复内容为大区名称,则记录大区名称
-  	elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['replay_content_type'] == 2:
-  		UserList[szFriendName]['game_purchase_info']['service_name']	= szTalkingContent
-
-  	# 1_2_3. 如果玩家的回复内容为角色名称,则记录游戏内角色名字
-  	elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['replay_content_type'] == 4:
-  		UserList[szFriendName]['game_purchase_info']['role_name']		= szTalkingContent
-
-  	# 1_2_4. 其它的暂不处理
-  	else:
-  		pass
-
-  	# 1_3. 判断玩家当前步骤是否需要特殊处理
-  	# 1_3_1. 如果需要总结购买信息并在此次对话中回复给玩家
-  	if Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['special_handle'] == 1:
-  		szAnswer = get_summarize_content( szFriendName ) + szAnswer
-
-  	# 1_3_2. 如果需要记录数据到Excel中
-  	elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['special_handle'] == 2:
-  		record_purchase_record(szFriendName)
-
-  	# 1_3_3. 其它的暂不处理
-  	else:
-  		pass
-
-  	# 1_4. 记录步骤数据
-  	UserList[szFriendName]['step']['first_step'] 	= strData[1]
-  	UserList[szFriendName]['step']['second_step'] 	= strData[2]
-
-
-  # 2. 如果下一步聊天异常则重置聊天步骤
+  # 2_4. 其它的暂不处理
   else:
-  	reset_talking_step(szFriendName)
+    pass
 
-  # 3. 记录聊天时间
+  # 3. 判断玩家当前步骤是否需要特殊处理
+  # 3_1. 如果需要总结购买信息并在此次对话中回复给玩家
+  if Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['special_handle'] == 1:
+    szAnswer = get_summarize_content( szFriendName ) + szAnswer
+
+  # 3_2. 如果需要记录数据到Excel中
+  elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['special_handle'] == 2:
+    record_purchase_record(szFriendName)
+
+  # 3_3. 如果检查玩家转账
+  elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['special_handle'] == 3:
+    if nFriendPay != 0 and UserList[szFriendName]['game_purchase_info']['all_cost'] is not None and 
+
+
+  # 3_4. 其它的暂不处理
+  else:
+    pass
+
+  # 4. 记录步骤数据
+  UserList[szFriendName]['step']['first_step']   = strData[1]
+  UserList[szFriendName]['step']['second_step']  = strData[2]
+
+  # 5. 记录聊天时间
   UserList[szFriendName]['msg_time']				= nMsgTime
 
-  # 4. 返回结果
+  # 6. 返回结果
   return szAnswer
+
+
+#########################################
+# 转账处理
+def check_friend_transfer_to_my_accounts( strMsgData ):
+  # 1. 解析数据
+  szWeChatName       = strMsgData['szUserName']
+  szFriendName       = strMsgData['FromUserName']
+  szTalkingContent   = strMsgData['msg_content']
+  nMsgTime           = strMsgData['msg_time']
+  nFriendPay         = strMsgData['friend_pay']
+
+  # 2. 判断数据是否异常
+  szAnswer           = ""
+
+  # 2_1. 判断之前的对话列表中是否存在该玩家
+  if szFriendName not in UserList:
+    szAnswer         = "一言不合就转账,这钱我不能收啊"
+    return (False , szAnswer)
+
+  # 2_2. 判断玩家的当前步骤是否异常
+  if UserList[szFriendName]['step'] is None or UserList[szFriendName]['step']['first_step'] is None or UserList[szFriendName]['step']['second_step'] is None:
+    szAnswer         = "当前步骤异常 -- 1"
+    return szAnswer
+
+  nCurFirstStep   = UserList[szFriendName]['step']['first_step']
+  nCurSecondSetp  = UserList[szFriendName]['step']['second_step']
+  if check_step(nCurFirstStep , nCurSecondSetp) != 1:
+    szAnswer         = "当前步骤异常 -- 2"
+    return (False , szAnswer)
+
+  # 2_3. 
+
+
+
+
+  # 2. 
+  # 2_1. 判断玩家当前步骤是否异常
+
+
+
+  
 
 
 #########################################

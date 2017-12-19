@@ -166,6 +166,15 @@ def text_reply(msg):
     # 这里必须得改成你的微信昵称，用于判断是别人给你转的钱
     # pay_type是交易类型：1是发送 3是接收
     if touser['NickName'] == mycount and int(pay_type) == 1:
+
+
+        
+
+
+
+
+
+
         print('Receive Money in ----- >')
 
         # 获取时间，异常处理

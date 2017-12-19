@@ -14,7 +14,7 @@
 
 
 # param					special_handle
-# 						0为无任何特殊处理,1为总结购买信息并在此次对话中回复给玩家,2为记录数据到Excel中
+# 						0为无任何特殊处理,1为总结购买信息并在此次对话中回复给玩家,2为记录数据到Excel中,3为检查玩家转账
 
 
 Talkint_Step 						= {
@@ -159,22 +159,35 @@ Talkint_Step 						= {
 	{
 		'1'					:
 		{
-			'talking_content'	:"系统已接收到请求,请回复任意内容,继续本次操作",
+			'talking_content'	:"系统已接收到请求,请转账(暂时只支持转账,红包功能敬请期待)",
 			'replay_content_limit'	:'',
 			'next_step'				:
 			{
 				'default'	: (7 , 1),
 			},
-			'wrong_jump_to_next'	:(7 , 1),
+			'wrong_jump_to_next'	:(6 , 1),
 			'replay_content_type'	:0,
-			'special_handle'		:2,
+			'special_handle'		:3,
 		}
 	},
 	'7':
 	{
 		'1'					:
 		{
-			'talking_content'	:"正在处理,请到游戏中确认,谢谢合作",
+			'talking_content'	:"正在处理,请回复任意内容,继续本次操作,稍后请到游戏中确认",
+			'replay_content_limit'	:'',
+			'next_step'				:
+			{
+				'default'	: (0 , 1),
+			},
+			'wrong_jump_to_next'	:(0 , 1),
+			'replay_content_type'	:0,
+			'special_handle'		:2,
+		},
+
+		'2'					:
+		{
+			'talking_content'	:"支付出现问题,系统已记录,待会本人将会联系你",
 			'replay_content_limit'	:'',
 			'next_step'				:
 			{
