@@ -39,16 +39,21 @@ def handle_receive_msg(msg):
     # print (msg['MsgId'])
     # print (msg['User']['RemarkName'])
     # print('handle_receive_msg ---- >Log Test : End')
-    return 
 
     # 1. 如果发送的消息是文本或者好友推荐
     if msg['Type'] == 'Text' or msg['Type'] == 'Friends':     
         msg_content = msg['Text']
 
         # 获取对方的名字(如果有备注的话则记录备注)
-        szUserName      = msg['User']['NickName']
-        if 'RemarkName' in msg['User'] and msg['User']['RemarkName'] != '':
-            szUserName  = msg['User']['RemarkName']
+        if msg['User']['RemarkName'] is not None:  # 备注名优先
+            szUserName = msg['User']['RemarkName']
+        elif msg['User']['NickName'] is not None:  # 昵称其次
+            szUserName = msg['User']['NickName']
+        else:
+            szUserName = r""
+
+        if szUserName == "":
+            return
 
         # 获取回复内容
         strData                 = {}
@@ -153,6 +158,7 @@ def text_reply(msg):
 
 # 转账
 mycount = "强迫症的潘胖纸"
+# mycount = "宝宝"
 money_receiver = 'filehelper'
 @itchat.msg_register([NOTE] , isFriendChat=True, isGroupChat=False)
 def text_reply(msg):
@@ -185,8 +191,12 @@ def text_reply(msg):
         except:
             None
 
+        if money_friend == '':
+            print('on friend transform to me by get name failed')
+            return
+
         strData                 = {}
-        strData['szUserName']   = temp_name
+        strData['szUserName']   = money_friend
         strData['FromUserName'] = msg['FromUserName']
         strData['msg_content']  = ''
         strData['msg_time']     = msg['CreateTime']

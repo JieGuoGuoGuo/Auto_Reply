@@ -3,6 +3,7 @@ import re
 import time 
 import string 
 import xlrd
+import math
 
 
 #########################################
@@ -79,7 +80,8 @@ def analysis_data(content):
     send_msg          = send_msg + szSingleContent
 
     # 6. 计算总金额
-    nAllCost          = nBuyCount * nCost + nAllCost
+    nAllCost          = (nBuyCount * nCost) + nAllCost
+    nAllCost          = float("%.2f" % nAllCost)
 
   send_msg            = send_msg + "总计 : " + str(nAllCost)
   return (nAllCost , send_msg , strItemDetial)
