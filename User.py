@@ -32,11 +32,14 @@ def get_summarize_content(szFriendName):
 	return szContent
 
 
-# < 3 > 
 # 获取当前日期的字符串
 def get_cur_date():
   return str(time.strftime("%Y-%m-%d", time.localtime()))
 
+
+""" -------------------------------------------------------------------------------------------------"""
+#                                               Excel处理
+""" -------------------------------------------------------------------------------------------------"""
 # 创建新的工作文本
 def creat_new_work_excel( szFileName , szSheetName ):
   w 	= Workbook()
@@ -94,9 +97,13 @@ def record_purchase_record(szFriendName):
   newWb.save(szFileName)
 
 
-# < 2 > 
-# 继续对话
-# 判断目标聊天步骤是否正常
+""" -------------------------------------------------------------------------------------------------"""
+#                                               判断当前步骤
+""" -------------------------------------------------------------------------------------------------"""
+## [[ 判断目标聊天步骤是否正常 ]] ##
+# @param       nFirstStep          当前聊天大步骤
+# @param       nSecondStep         当前聊天小步骤
+# end --
 def check_step( nFirstStep , nSecondStep ):
 	if str(nFirstStep) not in Talkint_Step:
 		return 0
@@ -106,7 +113,12 @@ def check_step( nFirstStep , nSecondStep ):
 
 	return 1
 
-# 判断聊天回复内容是否异常
+
+## [[ 判断聊天回复内容是否异常 ]] ##
+# @param       nFirstStep          当前聊天大步骤
+# @param       nSecondStep         当前聊天小步骤
+# @param       szContent           玩家回复内容
+# end --
 def check_reply_content( nFirstStep , nSecondStep , szContent ):
 	# 1. 判断数据是否异常
 	if check_step(nFirstStep , nSecondStep) != 1:
@@ -122,7 +134,79 @@ def check_reply_content( nFirstStep , nSecondStep , szContent ):
 	return szContent in strContentLimit and 1 or 0
 
 
-# 获取目标步骤错误处理之后的步骤
+## [[ 判断当前步骤是否有金钱限制 ]] ##
+# @param       szFriendName        玩家名称
+# @param       nFirstStep          当前聊天大步骤
+# @param       nSecondStep         当前聊天小步骤
+# @param       nFriendPay          朋友支付的金额
+# @return      bool , bool , bool  参数一是否出现异常情况(参数异常),参数二为当前步骤是否存在金钱检测,参数三为如果当前步骤存在金钱检测那么玩家支付是否满足
+# end --
+def check_money_limit( szFriendName , nFirstStep , nSecondStep , nFriendPay ):
+  # 1. 判断数据是否异常
+  if check_step(nFirstStep , nSecondStep) != 1:
+    print(r"check_money_limit failed for the wrong step : First{%s} , second{%s}" % (str(nFirstStep) , str(nSecondStep)))
+    return (False , None , None)
+
+  if (not isinstance(nFriendPay, int) and not isinstance(nFriendPay, float)) or nFriendPay < 0:
+    print(r"check_money_limit failed for the wrong friend_pay{%s} , type{%s} cur step : First{%s} , second{%s}" % (str(nFriendPay) , type(nFriendPay) , str(nFirstStep) , str(nSecondStep)))
+    return (False , None , None)
+
+  # 2. 判断玩家当前是否有记录物品消耗总金额
+  if UserList[szFriendName]['game_purchase_info'] is None or UserList[szFriendName]['game_purchase_info']['all_cost'] is None:
+    print(r"check_money_limit failed for all_cost not record before cur step : First{%s} , second{%s}" % (str(nFirstStep) , str(nSecondStep)))
+    return (False , None , None)
+
+  nAllCost    = UserList[szFriendName]['game_purchase_info']['all_cost']
+  if (not isinstance(nAllCost, int) and not isinstance(nAllCost, float)) or nAllCost < 0:
+    print(r"check_money_limit failed for the wrong all_cost{%s} cur step : First{%s} , second{%s}" % (nAllCost , str(nFirstStep) , str(nSecondStep)))
+    return (False , None , None)
+
+  # ------------------------------------
+  # 条件满足
+  # 1. 如果当前步骤不需要检查金额
+  if Talkint_Step[str(nFirstStep)][str(nSecondStep)]['special_handle'] != 3:
+    return (True , False , None)
+
+  # 3. 判断之前玩家的支付是否足够
+  return (True , True , nFriendPay >= nAllCost)
+
+
+## [[ 检测当前步骤 ]] ##
+# @param       szFriendName        玩家名称
+# @param       nFirstStep          当前聊天大步骤
+# @param       nSecondStep         当前聊天小步骤
+# @param       szContent           玩家回复内容
+# @param       nFriendPay          朋友支付的金额
+# end --
+def check_cur_step( szFriendName , nFirstStep , nSecondStep , szContent , nFriendPay ):
+  # 1. 判断当期步骤是否异常
+  if check_step(nFirstStep , nSecondStep) != 1:
+    print(r"check_cur_step failed for the wrong step : First{%s} , second{%s}" % (str(nFirstStep) , str(nSecondStep)))
+    return False
+
+  # 2. 判断聊天回复内容是否异常
+  if check_reply_content(nFirstStep , nSecondStep , szContent) != 1:
+    print(r"check_cur_step failed for the wrong replay{%s} cur step : First{%s} , second{%s}" % (str(szContent) , str(nFirstStep) , str(nSecondStep)))
+    return False
+
+  # 3. 判断当前步骤是否有金钱限制(数据异常或者支付金额不够)
+  strResultList   = check_money_limit(szFriendName , nFirstStep , nSecondStep , nFriendPay)
+  if not strResultList[0] or (strResultList[0] and strResultList[1] and not strResultList[2]):
+    print(r"check_cur_step failed for the money{%s} cur step : First{%s} , second{%s}" % (str(nFriendPay) , str(nFirstStep) , str(nSecondStep)))
+    return False
+
+  # ------------------------------------
+  # 条件满足
+  return True
+
+
+""" -------------------------------------------------------------------------------------------------"""
+#                                             下一步处理
+""" -------------------------------------------------------------------------------------------------"""
+## [[ 获取目标步骤错误处理之后的步骤 ]] ##
+# @param       nFirstStep          当前聊天大步骤
+# @param       nSecondStep         当前聊天小步骤
+# end --
 def get_after_handle_error_step( nFirstStep , nSecondStep ):
 	# 1. 判断数据是否异常
 	if check_step(nFirstStep , nSecondStep) != 1:
@@ -136,67 +220,68 @@ def get_after_handle_error_step( nFirstStep , nSecondStep ):
 	return (strWrongNextSteps[0] , strWrongNextSteps[1])
 
 
-# 有朋友与自己继续对话
-def get_next_step( strStepList , szTalkingContent ):
-	print('User:get_next_step -- Begin')
+## [[ 获取当前聊天步骤的下一步 ]] ##
+# @param       nFirstStep          当前聊天大步骤
+# @param       nSecondStep         当前聊天小步骤
+# @param       bCurCheckResult     当前聊天步骤是否异常
+# @param       szTalkingContent    玩家回复内容
+# @return      bool , int , int    参数一为是否获取到下一步骤,参数二为下一步的大步骤,参数三为下一步的小步骤
+# end --
+def get_next_step( nFirstStep , nSecondStep , bCurCheckResult , szTalkingContent ):
+  # 1. 获取当前的聊天步骤
+  if check_step(nFirstStep , nSecondStep) != 1:
+    print(r"get_next_step failed for the wrong step : First{%s} , second{%s}" % (str(nFirstStep) , str(nSecondStep)))
+    return (False , 0 , 0)
 
-	# 1. 获取当前的聊天步骤
-	nFirstStep				= strStepList['first_step']
-	nSecondStep				= strStepList['second_step']
-	if check_step(nFirstStep , nSecondStep) != 1:
-		print('User:get_next_step failed for the step : First ' + str(nFirstStep) + ' Second ' + str(nSecondStep))
-		return (0 , 0 , 0)
+  # 2. 如果玩家当前的聊天步骤异常,则获取异常跳转步骤
+  if bCurCheckResult is False:
+    strErrorHandle    = get_after_handle_error_step(nFirstStep , nSecondStep)
+    return (True , strErrorHandle[0] , strErrorHandle[1])
 
-	# 2. 判断玩家的回复内容是否有限制
-	if check_reply_content(nFirstStep , nSecondStep , szTalkingContent) != 1:
-		print('User:get_next_step failed for reply content not in limit list : First ' + str(nFirstStep) + ' Second ' + str(nSecondStep))
-		strErrorHandle 		= get_after_handle_error_step(nFirstStep , nSecondStep)
-		return (1 , strErrorHandle[0] , strErrorHandle[1])
+  # 3. 根据优先级获取下一步聊天内容
+  strNextStepList			= Talkint_Step[str(nFirstStep)][str(nSecondStep)]['next_step']
 
-	# 3. 根据优先级获取下一步聊天内容
-	strNextStepList			= Talkint_Step[str(nFirstStep)][str(nSecondStep)]['next_step']
+  # 3_2. 如果没有特殊需求则选择默认步骤
+  nNextFirstStep 			= strNextStepList['default'][0]
+  nNextSecondStep 		= strNextStepList['default'][1]
 
-	# 3_2. 如果没有特殊需求则选择默认步骤
-	nNextFirstStep 			= strNextStepList['default'][0]
-	nNextSecondStep 		= strNextStepList['default'][1]
+  # 3_1. 如果是根据玩家的回复决定下一步
+  if Talkint_Step[str(nFirstStep)][str(nSecondStep)]['replay_content_type'] == 3:
 
-	# 3_1. 如果是根据玩家的回复决定下一步
-	if Talkint_Step[str(nFirstStep)][str(nSecondStep)]['replay_content_type'] == 3:
+  # 3_1_2. 根据玩家的回复获取下一步内容(回复内容是否在限制列表中,在上面已经处理过)
+    nNextFirstStep 			= strNextStepList[szTalkingContent][0]
+    nNextSecondStep 		= strNextStepList[szTalkingContent][1]
 
-		# 3_1_2. 根据玩家的回复获取下一步内容(回复内容是否在限制列表中,在上面已经处理过)
-		nNextFirstStep 			= strNextStepList[szTalkingContent][0]
-		nNextSecondStep 		= strNextStepList[szTalkingContent][1]
+  # 4. 判断下一步聊天步骤是否异常
+  # 4_1. 如果下一步聊天步骤异常
+  if check_step(nNextFirstStep , nNextSecondStep) != 1:
+    strNextStepList 	= get_after_handle_error_step(nNextFirstStep , nNextSecondStep)
+    nNextFirstStep		= strNextStepList[0]
+    nNextSecondStep		= strNextStepList[1]
 
-	# 4. 判断下一步聊天步骤是否异常
-	# 4_1. 如果下一步聊天步骤异常
-	if check_step(nNextFirstStep , nNextSecondStep) != 1:
-		strNextStepList		= get_after_handle_error_step(nNextFirstStep , nNextSecondStep)
-		nNextFirstStep		= strNextStepList[0]
-		nNextSecondStep		= strNextStepList[1]
+  # 5. 判断新获取的步骤是否异常,如果异常强制结束
+  if check_step(nNextFirstStep , nNextSecondStep) != 1:
+    return (False , 0 , 0)
 
-	# 5. 判断新获取的步骤是否异常,如果异常强制结束
-	if check_step(nNextFirstStep , nNextSecondStep) != 1:
-		return (0 , 0 , 0)
-
-	# 6. 返回正常结果
-	return (1 , nNextFirstStep , nNextSecondStep)
+  # 6. 返回正常结果
+  return (True , nNextFirstStep , nNextSecondStep)
 
 # < 1 > 
 # 重置目标玩家的对话步骤
 def reset_talking_step(szFriendName):
-	UserList[szFriendName]['step'] 					= {}
-	UserList[szFriendName]['step']['first_step'] 	= 0			# 大步骤
-	UserList[szFriendName]['step']['second_step'] 	= 1			# 小步骤
+	UserList[szFriendName]['step'] 					         = {}
+	UserList[szFriendName]['step']['first_step'] 	   = 0			# 大步骤
+	UserList[szFriendName]['step']['second_step'] 	 = 1			# 小步骤
 
 # 重置目标玩家的游戏购买信息
 def reset_game_purchase_info( szFriendName ):
-	UserList[szFriendName]['game_purchase_info']					= {}		
-	UserList[szFriendName]['game_purchase_info']['role_name']		= ''		# 游戏内的角色名字
-	UserList[szFriendName]['game_purchase_info']['service_name']	= ''		# 大区名字
-	UserList[szFriendName]['game_purchase_info']['item_list']		= {}		# 购买商品
-	UserList[szFriendName]['game_purchase_info']['item_answer']		= ''		# 购买商品回复信息
-  UserList[szFriendName]['game_purchase_info']['all_cost']   = 0    # 商品总计应付金额
-  UserList[szFriendName]['game_purchase_info']['friend_pay']   = 0    # 玩家实际支付的金额
+  UserList[szFriendName]['game_purchase_info']					        = {}		
+  UserList[szFriendName]['game_purchase_info']['role_name']		  = ''		# 游戏内的角色名字
+  UserList[szFriendName]['game_purchase_info']['service_name']	= ''		# 大区名字
+  UserList[szFriendName]['game_purchase_info']['item_list']		  = {}		# 购买商品
+  UserList[szFriendName]['game_purchase_info']['item_answer']		= ''		# 购买商品回复信息
+  UserList[szFriendName]['game_purchase_info']['all_cost']      = 0    # 商品总计应付金额
+  UserList[szFriendName]['game_purchase_info']['friend_pay']    = 0    # 玩家实际支付的金额
 
 
 # 重置玩家的信息
@@ -226,8 +311,8 @@ def friend_talk_to_me( strMsgData ):
   szTalkingContent   = strMsgData['msg_content']
   nMsgTime			     = strMsgData['msg_time']
   nFriendPay         = 0
-  if strMsgData['friend_pay'] is not None:
-    nFriendPay       = strMsgData['friend_pay']
+  if 'friend_pay' in strMsgData:
+    nFriendPay       = float(strMsgData['friend_pay'])
 
   szAnswer           = '数据异常,错误步骤 : '
   # 1. 如果玩家之前没有跟自己说过话
@@ -245,11 +330,17 @@ def friend_talk_to_me( strMsgData ):
   nCurFirstStep   = UserList[szFriendName]['step']['first_step']
   nCurSecondSetp  = UserList[szFriendName]['step']['second_step']
 
-  # 4. 获取下一步信息
-  strData = get_next_step(UserList[szFriendName]['step'] , szTalkingContent)
-  if strData[0] != 1:
+
+  # print(r"nCurFirstStep : First{%s} , nCurSecondSetp{%s}" % (str(nCurFirstStep) , str(nCurSecondSetp)))
+
+  # 4. 判断玩家当前步骤是否异常
+  bCurResult      = check_cur_step(szFriendName , nCurFirstStep , nCurSecondSetp , szTalkingContent , nFriendPay)
+
+  # 5. 获取下一步信息
+  strData         = get_next_step(nCurFirstStep , nCurSecondSetp , bCurResult , szTalkingContent)
+  if not strData[0]:
     reset_friend_info(strMsgData)
-    szAnswer         = szAnswer + ' : 1' + str(nCurFirstStep) + '  ' + str(nCurSecondSetp)
+    szAnswer      = szAnswer + ' : 1' + str(nCurFirstStep) + '  ' + str(nCurSecondSetp)
     return szAnswer
 
   # ------------------------------------
@@ -294,8 +385,7 @@ def friend_talk_to_me( strMsgData ):
 
   # 3_3. 如果检查玩家转账
   elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['special_handle'] == 3:
-    if nFriendPay != 0 and UserList[szFriendName]['game_purchase_info']['all_cost'] is not None and 
-
+    UserList[szFriendName]['game_purchase_info']['friend_pay']    = nFriendPay
 
   # 3_4. 其它的暂不处理
   else:
@@ -305,51 +395,13 @@ def friend_talk_to_me( strMsgData ):
   UserList[szFriendName]['step']['first_step']   = strData[1]
   UserList[szFriendName]['step']['second_step']  = strData[2]
 
+  # print(r"nNextFirstStep : First{%s} , nNextSecondSetp{%s}" % (str(strData[1]) , str(strData[2])))
+
   # 5. 记录聊天时间
   UserList[szFriendName]['msg_time']				= nMsgTime
 
   # 6. 返回结果
   return szAnswer
-
-
-#########################################
-# 转账处理
-def check_friend_transfer_to_my_accounts( strMsgData ):
-  # 1. 解析数据
-  szWeChatName       = strMsgData['szUserName']
-  szFriendName       = strMsgData['FromUserName']
-  szTalkingContent   = strMsgData['msg_content']
-  nMsgTime           = strMsgData['msg_time']
-  nFriendPay         = strMsgData['friend_pay']
-
-  # 2. 判断数据是否异常
-  szAnswer           = ""
-
-  # 2_1. 判断之前的对话列表中是否存在该玩家
-  if szFriendName not in UserList:
-    szAnswer         = "一言不合就转账,这钱我不能收啊"
-    return (False , szAnswer)
-
-  # 2_2. 判断玩家的当前步骤是否异常
-  if UserList[szFriendName]['step'] is None or UserList[szFriendName]['step']['first_step'] is None or UserList[szFriendName]['step']['second_step'] is None:
-    szAnswer         = "当前步骤异常 -- 1"
-    return szAnswer
-
-  nCurFirstStep   = UserList[szFriendName]['step']['first_step']
-  nCurSecondSetp  = UserList[szFriendName]['step']['second_step']
-  if check_step(nCurFirstStep , nCurSecondSetp) != 1:
-    szAnswer         = "当前步骤异常 -- 2"
-    return (False , szAnswer)
-
-  # 2_3. 
-
-
-
-
-  # 2. 
-  # 2_1. 判断玩家当前步骤是否异常
-
-
 
   
 
