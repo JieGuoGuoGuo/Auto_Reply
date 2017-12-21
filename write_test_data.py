@@ -40,7 +40,7 @@ def get_cur_date():
 def write_excel_test():
   # 1. 获取文件名字
   szCurDate 	= get_cur_date()
-  szFileName 	= szCurDate + '.xls'
+  szFileName 	= szCurDate + '(商品购买记录).xls'
   szSheetName 	= 'Sheet1'
 
   # 2. 如果目标文件不存在则创建文件
@@ -73,29 +73,9 @@ def write_excel_test():
 
 # 主函数
 def main():
-  # 1. 初始化物品文件
-  BuyItem.Init()
-
-  # 2. 初始化玩家列表
-  User.Init()
-
-  # 测试
-  # strAnswer = friend_talk_to_me('11111231231' , '1')
-  # print(strAnswer[1])
-
-  for i in range(1, 11500):
+  for i in range(1, 5):
   	write_excel_test()
 
-
-# 有朋友与自己对话
-def friend_talk_to_me( strData ):
-  strAnswer = User.friend_talk_to_me(strData)
-  return strAnswer
-
-
-
-
-  
 
 if __name__=="__main__":
  main()

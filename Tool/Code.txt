@@ -7,7 +7,8 @@ Dim result
 Dim nLastLine			// 上次处理的行数
 
 nLastLine	= 1
-File_path	= "H:\GitHub\Auto_Reply\trunk\"
+File_path	= "E:\GitHub\Auto_Reply\trunk\"
+szSuffix 	= "(商品购买记录)"
 
 result = Main()
 
@@ -39,7 +40,7 @@ Function get_file_name()
 	szPath = nYear & "-" & nMonth & "-" & nDay
 	
 	// 3. 返回结果
-	get_file_name = szPath
+	get_file_name = szPath & szSuffixx
 End Function
 
 // --------------- [[ 创建临时文件 ]] -------------- //
