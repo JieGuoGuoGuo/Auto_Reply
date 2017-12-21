@@ -32,7 +32,7 @@ def handle_receive_msg(msg):
     msg_id          = msg['MsgId']          #每条信息的id
     msg_content     = None                  #储存信息的内容
     msg_share_url   = None                  #储存分享的链接，比如分享的文章和音乐
-    print('handle_receive_msg ---- >Log Test : Begin')
+    # print('handle_receive_msg ---- >Log Test : Begin')
     # print (msg)
     # print (msg_time_rec)
     # print (msg['Type'])
@@ -42,6 +42,7 @@ def handle_receive_msg(msg):
 
     # 1. 如果发送的消息是文本或者好友推荐
     if msg['Type'] == 'Text' or msg['Type'] == 'Friends':     
+        print('text_reply on friend talk to me')
         msg_content = msg['Text']
 
         # 获取对方的名字(如果有备注的话则记录备注)
@@ -120,6 +121,7 @@ def handle_receive_msg(msg):
 def information(msg):
     #这里如果这里的msg['Content']中包含消息撤回和id，就执行下面的语句
     if '撤回了一条消息' in msg['Content']:
+        print('text_reply on friend get back his message')
         old_msg_id = re.search("\<msgid\>(.*?)\<\/msgid\>", msg['Content']).group(1)   #在返回的content查找撤回的消息的id
         old_msg = msg_information.get(old_msg_id)    #得到消息
         print (old_msg)
@@ -152,18 +154,17 @@ def information(msg):
 @itchat.msg_register(TEXT, isGroupChat=True)
 def text_reply(msg):
     if msg.isAt:
+        print('text_reply on friend at me ')
         msg.user.send(u'@%s\u2005I received: %s' % (
             msg.actualNickName, msg.text))
 
 
 # 转账
 mycount = "强迫症的潘胖纸"
-# mycount = "宝宝"
 money_receiver = 'filehelper'
 @itchat.msg_register([NOTE] , isFriendChat=True, isGroupChat=False)
 def text_reply(msg):
-
-    print('Test----------- >')
+    print('text_reply on friend transform to my accout')
     pay_type = 0
     pay_type = re.search(".*\<paysubtype\>(.*?)\<\/paysubtype\>.*", msg['Content']).group(1)
     touser = itchat.search_friends(userName=msg['ToUserName'])

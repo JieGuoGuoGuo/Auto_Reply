@@ -317,14 +317,17 @@ def friend_talk_to_me( strMsgData ):
   szAnswer           = '数据异常,错误步骤 : '
   # 1. 如果玩家之前没有跟自己说过话
   if szFriendName not in UserList:
-  	reset_friend_info(strMsgData)
+    print(r'friend_talk_to_me not exist before , name is {%s}'%(szFriendName))
+    reset_friend_info(strMsgData)
 
   # 2. 如果玩家距离上次对话时间超过间隔时间则重置聊天步骤
   if nMsgTime - UserList[szFriendName]['msg_time'] > TALKING_INTERVAL_TIME:
-  	reset_friend_info(strMsgData)
+    print(r'friend_talk_to_me reset for the time over the interval  , name is {%s}'%(szFriendName))
+    reset_friend_info(strMsgData)
   
   # 3. 判断玩家当前步骤是否记录
   if UserList[szFriendName]['step'] is None:
+    print(r'friend_talk_to_me reset for his step not exist  , name is {%s}'%(szFriendName))
     reset_friend_info(strMsgData)
 
   nCurFirstStep   = UserList[szFriendName]['step']['first_step']
