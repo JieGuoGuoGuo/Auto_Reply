@@ -38,6 +38,53 @@ def get_cur_date():
 
 
 """ -------------------------------------------------------------------------------------------------"""
+#                                               转账记录
+""" -------------------------------------------------------------------------------------------------"""
+# 创建转账记录目录
+def creat_transform_account_record( szFileName , szSheetName ):
+  w   = Workbook()
+  ws  = w.add_sheet(szSheetName)
+  ws.write(0, 0, label = '微信名称')
+  ws.write(0, 1, label = '转账金额')
+  ws.write(0, 2, label = '处理时间')
+  w.save(szFileName)
+
+
+# 存储数据到Excel
+def record_transform_record( name ,count ):
+  # 1. 获取文件名字
+  szCurDate   = get_cur_date()
+  szFileName  = szCurDate + '(微信转账记录).xls'
+  szSheetName = 'Sheet1'
+
+  # 2. 如果目标文件不存在则创建文件
+  if not os.path.isfile(szFileName):
+    creat_transform_account_record(szFileName , szSheetName)
+
+  # 2. 打开Excel文件
+  bk        = xlrd.open_workbook(szFileName , formatting_info=True)
+  shxrange  = range(bk.nsheets)
+  try:
+   sh       = bk.sheet_by_name(szSheetName)
+  except:
+   sh     = bk.add_sheet(szSheetName)
+   print ("no sheet in %s named Sheet1" % file)
+
+  # 3. 获取行数和列数
+  nrows     = sh.nrows
+
+  # 4. 在新的一行中写入数据
+  newWb   = copy(bk)
+  newWs   = newWb.get_sheet(0)
+  newWs.write(nrows, 0 , label = str(name))
+  newWs.write(nrows, 1 , label = str(count)) 
+  newWs.write(nrows, 2 , label = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))) 
+
+  newWb.save(szFileName)
+
+
+
+""" -------------------------------------------------------------------------------------------------"""
 #                                               Excel处理
 """ -------------------------------------------------------------------------------------------------"""
 # 创建新的工作文本
@@ -61,7 +108,7 @@ def record_purchase_record(szFriendName):
 
   # 1. 获取文件名字
   szCurDate 	= get_cur_date()
-  szFileName 	= szCurDate + '.xls'
+  szFileName 	= szCurDate + '(商品购买记录).xls'
   szSheetName 	= 'Sheet1'
 
   # 2. 如果目标文件不存在则创建文件

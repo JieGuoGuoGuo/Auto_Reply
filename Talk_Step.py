@@ -174,11 +174,11 @@ Talkint_Step 						= {
 	{
 		'1'					:
 		{
-			'talking_content'	:"正在处理,请回复任意内容,继续本次操作,稍后请到游戏中确认",
+			'talking_content'	:"请回复任意内容,继续本次操作",
 			'replay_content_limit'	:'',
 			'next_step'				:
 			{
-				'default'	: (0 , 1),
+				'default'	: (8 , 1),
 			},
 			'wrong_jump_to_next'	:(0 , 1),
 			'replay_content_type'	:0,
@@ -188,6 +188,21 @@ Talkint_Step 						= {
 		'2'					:
 		{
 			'talking_content'	:"支付出现问题,系统已记录,待会本人将会联系你",
+			'replay_content_limit'	:'',
+			'next_step'				:
+			{
+				'default'	: (0 , 1),
+			},
+			'wrong_jump_to_next'	:(0 , 1),
+			'replay_content_type'	:0,
+			'special_handle'		:0,
+		}
+	},
+	'8':
+	{
+		'1'					:
+		{
+			'talking_content'	:"正在处理,稍后请到游戏中确认",
 			'replay_content_limit'	:'',
 			'next_step'				:
 			{

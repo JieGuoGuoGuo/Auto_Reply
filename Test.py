@@ -11,9 +11,12 @@ import importlib
 importlib.reload(sys)
 import os
 import Main
+import User
 
 msg_information = {}
 face_bug=None  #针对表情包的内容
+
+money_receiver = 'filehelper'
 
 
 @itchat.msg_register([TEXT, PICTURE, FRIENDS, CARD, MAP, SHARING, RECORDING, ATTACHMENT, VIDEO],isFriendChat=True, isGroupChat=True, isMpChat=True)
@@ -24,6 +27,7 @@ def handle_receive_msg(msg):
 
     #在好友列表中查询发送信息的好友昵称
     msg_from = itchat.search_friends(userName=msg['FromUserName'])
+    touser = itchat.search_friends(userName=msg['ToUserName'])
     if msg_from is not None and msg_from['NickName'] is not None:
         msg_from = msg_from['NickName'] 
     # msg_from = itchat.search_friends(userName=msg['FromUserName'])['NickName']   
@@ -41,19 +45,29 @@ def handle_receive_msg(msg):
     # print('handle_receive_msg ---- >Log Test : End')
 
     # 1. 如果发送的消息是文本或者好友推荐
-    if msg['Type'] == 'Text' or msg['Type'] == 'Friends':     
-        print('text_reply on friend talk to me')
-        msg_content = msg['Text']
+    if msg['Type'] == 'Text' or msg['Type'] == 'Friends':   
+        if touser['NickName'] != mycount:
+            print(mycount)
+            print(touser['NickName'])
+            print('text_reply on friend talk to me failed for to user not me')
+            return
 
+        print('text_reply on friend talk to me')
+        # print(msg)
+        # print(msg['User'])
+        # return
+
+        msg_content = msg['Text']
         # 获取对方的名字(如果有备注的话则记录备注)
-        if msg['User']['RemarkName'] is not None:  # 备注名优先
+        if msg['User']['RemarkName'] is not None and msg['User']['RemarkName'] != "":  # 备注名优先
             szUserName = msg['User']['RemarkName']
-        elif msg['User']['NickName'] is not None:  # 昵称其次
+        elif msg['User']['NickName'] is not None and msg['User']['NickName'] != "":  # 昵称其次
             szUserName = msg['User']['NickName']
         else:
             szUserName = r""
 
         if szUserName == "":
+            print('text_reply on friend talk to me failed for szUserName is nil')
             return
 
         # 获取回复内容
@@ -122,6 +136,8 @@ def information(msg):
     #这里如果这里的msg['Content']中包含消息撤回和id，就执行下面的语句
     if '撤回了一条消息' in msg['Content']:
         print('text_reply on friend get back his message')
+        # print(msg)
+        # return
         old_msg_id = re.search("\<msgid\>(.*?)\<\/msgid\>", msg['Content']).group(1)   #在返回的content查找撤回的消息的id
         old_msg = msg_information.get(old_msg_id)    #得到消息
         print (old_msg)
@@ -155,16 +171,19 @@ def information(msg):
 def text_reply(msg):
     if msg.isAt:
         print('text_reply on friend at me ')
+        # print(msg)
+        # return
+
         msg.user.send(u'@%s\u2005I received: %s' % (
             msg.actualNickName, msg.text))
 
 
 # 转账
-mycount = "强迫症的潘胖纸"
-money_receiver = 'filehelper'
 @itchat.msg_register([NOTE] , isFriendChat=True, isGroupChat=False)
 def text_reply(msg):
     print('text_reply on friend transform to my accout')
+    # print(msg)
+    # return
     pay_type = 0
     pay_type = re.search(".*\<paysubtype\>(.*?)\<\/paysubtype\>.*", msg['Content']).group(1)
     touser = itchat.search_friends(userName=msg['ToUserName'])
@@ -196,6 +215,8 @@ def text_reply(msg):
             print('on friend transform to me by get name failed')
             return
 
+        User.record_transform_record(money_friend , money_count)
+
         strData                 = {}
         strData['szUserName']   = money_friend
         strData['FromUserName'] = msg['FromUserName']
@@ -208,9 +229,19 @@ def text_reply(msg):
 
 
 #########################################
-itchat.auto_login(hotReload=True)
-Main.main()
-itchat.run()
+if __name__ == '__main__':
+    # 设置接收人 必须是微信号，如果是写死的可以在这儿实现
+    # 并且全局变量和主函数里的变量要注释掉
+    # money_receiver = 'filehelper'
+    # mycount="假装有count"
+    mycount = input(r"请输入转账信息接收人昵称(如:AA_鹏鹏)>")
+    # 白底黑字为-1 黑底白字为1
+    # 树莓派设为2 win10设为1 大家自己测试
+    # 控制台不关，可以一直运行
+    # itchat.auto_login(hotReload=True, enableCmdQR=1)
+    itchat.auto_login(hotReload=True)
+    Main.main()
+    itchat.run()
 
 # 多开
 # newInstance = itchat.new_instance()
