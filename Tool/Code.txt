@@ -7,7 +7,7 @@ Dim result
 Dim nLastLine			// 上次处理的行数
 
 nLastLine	= 1
-File_path	= "E:\GitHub\Auto_Reply\trunk\"
+File_path	= "H:\GitHub\Auto_Reply\trunk\"
 szSuffix 	= "(商品购买记录)"
 
 result = Main()
@@ -15,14 +15,15 @@ result = Main()
 /*****************************************************************/
 //							主  入  口	
 /*****************************************************************/
-Function Main()
-	Dim xxxx
-	xxxx = handle_file()
-	
+Function Main()	
+	While True
+		Dim xxxx
+		xxxx = handle_file()
+		Delay 300000
+	Wend
 	
 	Main 	= True	
 End Function
-
 
 /*****************************************************************/
 // 辅助函数	
@@ -40,7 +41,7 @@ Function get_file_name()
 	szPath = nYear & "-" & nMonth & "-" & nDay
 	
 	// 3. 返回结果
-	get_file_name = szPath & szSuffixx
+	get_file_name = szPath & szSuffix
 End Function
 
 // --------------- [[ 创建临时文件 ]] -------------- //
@@ -76,6 +77,65 @@ Function get_temp_file_path(szFileName)
 End Function
 
 
+// --------------- [[ 发送邮件 ]] -------------- //
+Function Send_email()
+	FindPic 0,0,1920,1080,"Attachment:\发货标记.bmp",0.6,intX,intY
+	If intX > 0 And intY > 0 Then 
+    	MoveTo 170, 225//C2位置
+    	LeftClick 1//点击名字
+    	Delay 500
+		MoveTo 400, 170
+    	LeftClick 1//点击名字
+    	LeftDown 1//按下
+    	MoveTo 240, 170//拖动名字
+    	LeftUp 1//弹起
+    	Delay 500
+    	MoveTo 80, 90//复制名字
+    	LeftClick 1
+    	MoveTo 888, 888
+    	LeftClick 1
+    	Delay 500
+    	MoveTo 340, 1060//任务栏第四个
+    	Delay 500
+    	MoveTo 300, 1000//进入游戏
+    	LeftClick 1
+    	Delay 500
+    	MoveTo 370, 440//主题位置
+    	LeftClick 1
+    	Delay 1000
+    	KeyPress "1", 1
+    	MoveTo 370, 400//邮件收件人位置
+    	LeftClick 1
+    	Delay 1000
+    	KeyDown 17, 1
+    	Delay 200
+    	KeyPress 86, 1
+    	Delay 200
+    	KeyUp 17, 1
+    	Delay 1000
+    	MoveTo 290, 550//付款收信
+    	LeftClick 1
+    	//移动到风物志
+    	FindPic 0,0,1920,1080, "Attachment:\a.bmp", 0.7, intX, intY
+    	If intX > 0 And intY > 0 Then
+        	MoveTo intX, intY
+        	Delay 500
+    	End If
+    	//移动到风物志
+    	LeftClick 1
+    	Delay 200
+    	MoveTo 205, 590
+    	LeftClick 1
+    	Delay 200
+    	MoveTo 360, 730//发送
+    	Delay 200
+    	LeftClick 1
+    	MoveTo 980, 610
+    	Delay 200
+    	LeftClick 1
+	End If
+End Function
+
 // --------------- [[ 处理文件 ]] -------------- //
 Function handle_file()
 	// 1. 获取函数名字
@@ -89,7 +149,7 @@ Function handle_file()
 	Dim szTempFilePath
 	szTempFilePath 	= get_temp_file_path(FileName)
 	Set LazyExcel 	= CreateObject("Lazy.LxjExcel")
-	Index = LazyExcel.ExcelOpen(szTempFilePath, 0)
+	Index = LazyExcel.ExcelOpen(szTempFilePath, 1)
 	
 	// 4. 临时文件的总行数和总列数
 	RowsCount 		= LazyExcel.SheetRowsCount(1, Index)
@@ -97,23 +157,39 @@ Function handle_file()
 	
 	// 5. 如果上次处理的行数跟临时文件一致则不做任何处理
 	If RowsCount = nLastLine Then 
+		Call LazyExcel.ExcelClose(Index)
+		Call Plugin.File.DeleteFile(szTempFilePath)	
 		Exit Function
 	End If
 	
-	// 5. 遍历文件
-	For nLineIndex = nLastLine To RowsCount
-		For nColumnsIndex = 1 To ColumnsCount
-			txt = LazyExcel.ExcelRead(1, nLineIndex, nColumnsIndex, Index)
-			MessageBox txt
-		Next
+
+	For nLineIndex = 1 To nLastLine
+		Call LazyExcel.ExcelRows(1, "1:1", "删除", "", Index)
 	Next
+	
+	// 5. 遍历文件
+//	For nLineIndex = nLastLine To RowsCount
+//		For nColumnsIndex = 1 To ColumnsCount
+//			txt = LazyExcel.ExcelRead(1, nLineIndex, nColumnsIndex, Index)
+//			MessageBox txt
+//		Next
+//	Next
 	
 	// 6. 处理结束
 	// 6_1. 记录最后一次处理的行数
 	nLastLine = RowsCount
-	MessageBox nLastLine
 	
 	// 6_2. 关闭文件并删除文件
 	Call LazyExcel.ExcelClose(Index)
-	Call Plugin.File.DeleteFile(szTempFilePath)	
+	
+	
+	
+	Index = LazyExcel.ExcelOpen(szTempFilePath, 1)
+	
+	
+	
+//	Call Plugin.File.DeleteFile(szTempFilePath)	
 End Function
+
+
+
