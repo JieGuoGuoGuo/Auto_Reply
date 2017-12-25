@@ -1,0 +1,9 @@
+ setInterval(function(){
+      //设置条件
+      if (this.document.getElementById("ticker_wrap").childNodes[1].childNodes[1].innerText < 13700) {
+        console.log('当前值是 ' + this.document.getElementById("ticker_wrap").childNodes[1].childNodes[1].innerText + ',满足条件');
+        alert('胡爷！当前值小于13700!赶紧买入！')
+      } else {
+        console.log('当前值是 ' + this.document.getElementById("ticker_wrap").childNodes[1].childNodes[1].innerText + ',不满足条件');
+      }
+    },1000);
