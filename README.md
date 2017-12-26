@@ -16,5 +16,3 @@ https://zhuanlan.zhihu.com/p/26554533?group_id=840486798680559617
 
 微信支付现金红包接口(php)
 https://www.cnblogs.com/txw1958/p/weixin-redpackets.html
-
-https://github.com/huobiapi/API_Docs/wiki 
