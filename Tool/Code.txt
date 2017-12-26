@@ -1,110 +1,120 @@
-/*****************************************************************/
-// ³õÊ¼»¯
+ï»¿/*****************************************************************/
+// åˆå§‹åŒ–
 /*****************************************************************/
 Dim LazyExcel, path, Index, RCount
 Dim File_path
 Dim result
-Dim nLastLine			// ÉÏ´Î´¦ÀíµÄĞĞÊı
+Dim nLastLine			// ä¸Šæ¬¡å¤„ç†çš„è¡Œæ•°
 
 nLastLine	= 1
-File_path	= "H:\GitHub\Auto_Reply\trunk\"
-szSuffix 	= "(ÉÌÆ·¹ºÂò¼ÇÂ¼)"
+File_path	= "E:\GitHub\Auto_Reply\trunk\"
+szSuffix 	= "(å•†å“è´­ä¹°è®°å½•)"
 
 result = Main()
 
 /*****************************************************************/
-//							Ö÷  Èë  ¿Ú	
+//							ä¸»  å…¥  å£	
 /*****************************************************************/
 Function Main()	
 	While True
 		Dim xxxx
 		xxxx = handle_file()
-		Delay 300000
+		Delay 1000
 	Wend
 	
 	Main 	= True	
 End Function
 
 /*****************************************************************/
-// ¸¨Öúº¯Êı	
+// è¾…åŠ©å‡½æ•°	
 /*****************************************************************/
-// --------------- [[ »ñÈ¡ÎÄ¼şÃû×Ö ]] -------------- //
+// --------------- [[ è·å–æ–‡ä»¶åå­— ]] -------------- //
 Function get_file_name()
 	Dim szPath
 	
-	// 1. »ñÈ¡µ±Ç°µÄÏµÍ³Ê±¼ä
+	// 1. è·å–å½“å‰çš„ç³»ç»Ÿæ—¶é—´
 	nYear 	= Year(Now)
 	nMonth 	= Month(Now)
 	nDay 	= Day(Now)
 	
-	// 2. Æ´½ÓÃû×Ö
+	// 2. æ‹¼æ¥åå­—
 	szPath = nYear & "-" & nMonth & "-" & nDay
 	
-	// 3. ·µ»Ø½á¹û
+	// 3. è¿”å›ç»“æœ
 	get_file_name = szPath & szSuffix
 End Function
 
-// --------------- [[ ´´½¨ÁÙÊ±ÎÄ¼ş ]] -------------- //
+// --------------- [[ åˆ›å»ºä¸´æ—¶æ–‡ä»¶ ]] -------------- //
 Function creat_temp_file(szFileName)
 	Dim szOriName , szTempName
 	Dim szOriPath , szTempPath
 	
 	
-	// 1. »ñÈ¡ÁÙÊ±ÎÄ¼şÃû×Ö
+	// 1. è·å–ä¸´æ—¶æ–‡ä»¶åå­—
 	szOriName	= szFileName & ".xls"
 	szTempName	= szFileName & "_Temp.xls"
 	
-	// 2. »ñÈ¡Â·¾¶
+	// 2. è·å–è·¯å¾„
 	szOriPath 	= File_path & szOriName
 	szTempPath 	= File_path & szTempName
 	
-	// 3. ÎÄ¼ş¿½±´
+	// 3. æ–‡ä»¶æ‹·è´
+    If Plugin.File.IsFileExit(szTempPath) Then 
+//    	Set LazyExcel 	= CreateObject("Lazy.LxjExcel")
+//		Index = LazyExcel.ExcelOpen(szTempPath, 0)
+//		Call LazyExcel.ExcelSave(Index)
+//		Call LazyExcel.ExcelClose(Index)
+		Call Plugin.File.DeleteFile(szTempPath)
+//		MessageBox "Delete --- >"
+    End If
+
 	Call Plugin.File.CopyFile(szOriPath, szTempPath)	
 End Function
 
-// --------------- [[ »ñÈ¡ÁÙÊ±ÎÄ¼şÂ·¾¶ ]] -------------- //
+// --------------- [[ è·å–ä¸´æ—¶æ–‡ä»¶è·¯å¾„ ]] -------------- //
 Function get_temp_file_path(szFileName)
 	Dim szTempName , szTempPath	
 	
-	// 1. »ñÈ¡ÁÙÊ±ÎÄ¼şÃû×Ö
+	// 1. è·å–ä¸´æ—¶æ–‡ä»¶åå­—
 	szTempName			= szFileName & "_Temp.xls"
 	
-	// 2. »ñÈ¡Â·¾¶
+	// 2. è·å–è·¯å¾„
 	szTempPath 			= File_path & szTempName
 	
-	// 3. ÎÄ¼ş¿½±´
+	// 3. æ–‡ä»¶æ‹·è´
 	get_temp_file_path 	= szTempPath	
 End Function
 
 
-// --------------- [[ ·¢ËÍÓÊ¼ş ]] -------------- //
+// --------------- [[ å‘é€é‚®ä»¶ ]] -------------- //
 Function Send_email()
-	FindPic 0,0,1920,1080,"Attachment:\·¢»õ±ê¼Ç.bmp",0.6,intX,intY
-	If intX > 0 And intY > 0 Then 
-    	MoveTo 170, 225//C2Î»ÖÃ
-    	LeftClick 1//µã»÷Ãû×Ö
+	FindPic 0,0,1920,1080,"Attachment:\å‘è´§æ ‡è®°.bmp",0.6,intX,intY
+//	If intX > 0 And intY > 0 Then 
+	If True Then
+    	MoveTo 170, 225//C2ä½ç½®
+    	LeftClick 1//ç‚¹å‡»åå­—
     	Delay 500
 		MoveTo 400, 170
-    	LeftClick 1//µã»÷Ãû×Ö
-    	LeftDown 1//°´ÏÂ
-    	MoveTo 240, 170//ÍÏ¶¯Ãû×Ö
-    	LeftUp 1//µ¯Æğ
+    	LeftClick 1//ç‚¹å‡»åå­—
+    	LeftDown 1//æŒ‰ä¸‹
+    	MoveTo 240, 170//æ‹–åŠ¨åå­—
+    	LeftUp 1//å¼¹èµ·
     	Delay 500
-    	MoveTo 80, 90//¸´ÖÆÃû×Ö
+    	MoveTo 80, 90//å¤åˆ¶åå­—
     	LeftClick 1
     	MoveTo 888, 888
     	LeftClick 1
     	Delay 500
-    	MoveTo 340, 1060//ÈÎÎñÀ¸µÚËÄ¸ö
+    	MoveTo 340, 1060//ä»»åŠ¡æ ç¬¬å››ä¸ª
     	Delay 500
-    	MoveTo 300, 1000//½øÈëÓÎÏ·
+    	MoveTo 300, 1000//è¿›å…¥æ¸¸æˆ
     	LeftClick 1
     	Delay 500
-    	MoveTo 370, 440//Ö÷ÌâÎ»ÖÃ
+    	MoveTo 370, 440//ä¸»é¢˜ä½ç½®
     	LeftClick 1
     	Delay 1000
     	KeyPress "1", 1
-    	MoveTo 370, 400//ÓÊ¼şÊÕ¼şÈËÎ»ÖÃ
+    	MoveTo 370, 400//é‚®ä»¶æ”¶ä»¶äººä½ç½®
     	LeftClick 1
     	Delay 1000
     	KeyDown 17, 1
@@ -113,21 +123,21 @@ Function Send_email()
     	Delay 200
     	KeyUp 17, 1
     	Delay 1000
-    	MoveTo 290, 550//¸¶¿îÊÕĞÅ
+    	MoveTo 290, 550//ä»˜æ¬¾æ”¶ä¿¡
     	LeftClick 1
-    	//ÒÆ¶¯µ½·çÎïÖ¾
+    	//ç§»åŠ¨åˆ°é£ç‰©å¿—
     	FindPic 0,0,1920,1080, "Attachment:\a.bmp", 0.7, intX, intY
     	If intX > 0 And intY > 0 Then
         	MoveTo intX, intY
         	Delay 500
     	End If
-    	//ÒÆ¶¯µ½·çÎïÖ¾
+    	//ç§»åŠ¨åˆ°é£ç‰©å¿—
     	LeftClick 1
     	Delay 200
     	MoveTo 205, 590
     	LeftClick 1
     	Delay 200
-    	MoveTo 360, 730//·¢ËÍ
+    	MoveTo 360, 730//å‘é€
     	Delay 200
     	LeftClick 1
     	MoveTo 980, 610
@@ -136,59 +146,55 @@ Function Send_email()
 	End If
 End Function
 
-// --------------- [[ ´¦ÀíÎÄ¼ş ]] -------------- //
+// --------------- [[ å¤„ç†æ–‡ä»¶ ]] -------------- //
 Function handle_file()
-	// 1. »ñÈ¡º¯ÊıÃû×Ö
+	// 1. è·å–å‡½æ•°åå­—
 	Dim FileName
 	FileName = get_file_name()
 	
-	// 2. ´´½¨ÁÙÊ±ÎÄ¼ş
+	// 2. åˆ›å»ºä¸´æ—¶æ–‡ä»¶
 	creat_temp_file (FileName)
 	
-	// 3. »ñÈ¡ÁÙÊ±ÎÄ¼ş  
+	// 3. è·å–ä¸´æ—¶æ–‡ä»¶  
 	Dim szTempFilePath
 	szTempFilePath 	= get_temp_file_path(FileName)
-	Set LazyExcel 	= CreateObject("Lazy.LxjExcel")
+	Set LazyExcel = CreateObject("Lazy.LxjExcel")
+	Dim Index
 	Index = LazyExcel.ExcelOpen(szTempFilePath, 1)
 	
-	// 4. ÁÙÊ±ÎÄ¼şµÄ×ÜĞĞÊıºÍ×ÜÁĞÊı
+	// 4. ä¸´æ—¶æ–‡ä»¶çš„æ€»è¡Œæ•°å’Œæ€»åˆ—æ•°
 	RowsCount 		= LazyExcel.SheetRowsCount(1, Index)
-	ColumnsCount = LazyExcel.SheetColumnsCount(1, Index)
+	ColumnsCount 	= LazyExcel.SheetColumnsCount(1, Index)
 	
-	// 5. Èç¹ûÉÏ´Î´¦ÀíµÄĞĞÊı¸úÁÙÊ±ÎÄ¼şÒ»ÖÂÔò²»×öÈÎºÎ´¦Àí
-	If RowsCount = nLastLine Then 
+	// 5. å¦‚æœä¸Šæ¬¡å¤„ç†çš„è¡Œæ•°è·Ÿä¸´æ—¶æ–‡ä»¶ä¸€è‡´åˆ™ä¸åšä»»ä½•å¤„ç†
+	If RowsCount <= nLastLine Then 
+		RowsCount = nLastLine
 		Call LazyExcel.ExcelClose(Index)
 		Call Plugin.File.DeleteFile(szTempFilePath)	
 		Exit Function
 	End If
 	
-
+	// 6. åˆ é™¤å¤šä½™æ•°æ®
 	For nLineIndex = 1 To nLastLine
-		Call LazyExcel.ExcelRows(1, "1:1", "É¾³ı", "", Index)
+		Call LazyExcel.ExcelRows(1, 1, "åˆ é™¤", "", Index)
+		Call LazyExcel.ExcelSave(Index)
 	Next
 	
-	// 5. ±éÀúÎÄ¼ş
-//	For nLineIndex = nLastLine To RowsCount
-//		For nColumnsIndex = 1 To ColumnsCount
-//			txt = LazyExcel.ExcelRead(1, nLineIndex, nColumnsIndex, Index)
-//			MessageBox txt
-//		Next
-//	Next
+	// 6. å¤„ç†ç»“æŸ
+	// 6_1. è®°å½•æœ€åä¸€æ¬¡å¤„ç†çš„è¡Œæ•°
+	nLastLine = nLastLine + 1
 	
-	// 6. ´¦Àí½áÊø
-	// 6_1. ¼ÇÂ¼×îºóÒ»´Î´¦ÀíµÄĞĞÊı
-	nLastLine = RowsCount
+	Dim temp_data
+	temp_data = Send_email()
 	
-	// 6_2. ¹Ø±ÕÎÄ¼ş²¢É¾³ıÎÄ¼ş
+	// 6_2. å…³é—­æ–‡ä»¶ä¿å­˜æ–‡ä»¶
+//	Delay 1000
 	Call LazyExcel.ExcelClose(Index)
+//	MessageBox "RowsCount :" & RowsCount & "nLastLine :" & nLastLine
 	
 	
-	
-	Index = LazyExcel.ExcelOpen(szTempFilePath, 1)
-	
-	
-	
-//	Call Plugin.File.DeleteFile(szTempFilePath)	
+//	Index = LazyExcel.ExcelOpen(szTempFilePath, 1)
+//	MessageBox "Test ---- >"
 End Function
 
 
