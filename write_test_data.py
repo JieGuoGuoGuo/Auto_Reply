@@ -26,9 +26,12 @@ def creat_new_work_excel( szFileName , szSheetName ):
   ws.write(0, 0, label = '微信名称')
   ws.write(0, 1, label = '大区名称')
   ws.write(0, 2, label = '角色名称')
-  ws.write(0, 3, label = '商品信息') 
-  ws.write(0, 4, label = '上一条微信信息发送的时间') 
-  ws.write(0, 5, label = '系统处理时间')
+  ws.write(0, 3, label = '商品名称') 
+  ws.write(0, 4, label = '商品个数') 
+  ws.write(0, 5, label = '上一条微信信息发送的时间') 
+  ws.write(0, 6, label = '系统处理时间')
+  ws.write(0, 7, label = '自动发货特殊标记')
+  w.save(szFileName)
   w.save(szFileName)
 
 
@@ -65,9 +68,10 @@ def write_excel_test():
   newWs.write(nrows, 0 , label = str('强迫症的潘胖纸'))
   newWs.write(nrows, 1 , label = str('龙门客栈')) 
   newWs.write(nrows, 2 , label = str('西门吹雪')) 
-  newWs.write(nrows, 3 , label = str("{'鞋子': 4, '裤子': 3}")) 
-  newWs.write(nrows, 4 , label = str('1513304833')) 
-  newWs.write(nrows, 5 , label = str('2017-12-15 10:27:16')) 
+  newWs.write(nrows, 3 , label = str("银子")) 
+  newWs.write(nrows, 4 , label = str("3")) 
+  newWs.write(nrows, 5 , label = str('1513304833')) 
+  newWs.write(nrows, 6 , label = str('2017-12-15 10:27:16')) 
   newWb.save(szFileName)
 
 

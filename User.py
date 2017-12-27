@@ -98,6 +98,7 @@ def creat_new_work_excel( szFileName , szSheetName ):
   ws.write(0, 4, label = '商品个数') 
   ws.write(0, 5, label = '上一条微信信息发送的时间') 
   ws.write(0, 6, label = '系统处理时间')
+  ws.write(0, 7, label = '自动发货特殊标记')
   w.save(szFileName)
 
 # 存储购买数据到Excel

@@ -171,8 +171,8 @@ def information(msg):
 def text_reply(msg):
     if msg.isAt:
         print('text_reply on friend at me ')
-        # print(msg)
-        # return
+        print(msg.text)
+        return
 
         msg.user.send(u'@%s\u2005I received: %s' % (
             msg.actualNickName, msg.text))
