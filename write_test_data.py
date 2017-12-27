@@ -40,7 +40,7 @@ def get_cur_date():
   return str(time.strftime("%Y-%m-%d", time.localtime()))
 
 # 
-def write_excel_test():
+def write_excel_test(nIndex):
   # 1. 获取文件名字
   szCurDate 	= get_cur_date()
   szFileName 	= szCurDate + '(商品购买记录).xls'
@@ -65,7 +65,7 @@ def write_excel_test():
   # 4. 在新的一行中写入数据
   newWb		= copy(bk)
   newWs		= newWb.get_sheet(0)
-  newWs.write(nrows, 0 , label = str('强迫症的潘胖纸'))
+  newWs.write(nrows, 0 , label = str('强迫症的潘胖纸 -- ' + str(nIndex)))
   newWs.write(nrows, 1 , label = str('龙门客栈')) 
   newWs.write(nrows, 2 , label = str('西门吹雪')) 
   newWs.write(nrows, 3 , label = str("银子")) 
@@ -78,7 +78,7 @@ def write_excel_test():
 # 主函数
 def main():
   for i in range(1, 5):
-  	write_excel_test()
+    write_excel_test(i)
 
 
 if __name__=="__main__":
