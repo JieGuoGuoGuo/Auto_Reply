@@ -6,7 +6,8 @@ Dim File_path
 Dim result
 Dim nLastLine			// 上次处理的行数
 
-nLastLine	= 1
+nLastLine = 1
+nBeginIndex = 2
 File_path	= "E:\GitHub\Auto_Reply\trunk\"
 szSuffix 	= "(商品购买记录)"
 
@@ -90,7 +91,7 @@ End Function
 Function Send_email()
 	FindPic 0,0,1920,1080,"Attachment:\发货标记.bmp",0.6,intX,intY
 //	If intX > 0 And intY > 0 Then 
-	If True Then
+	If False Then
     	MoveTo 170, 225//C2位置
     	LeftClick 1//点击名字
     	Delay 500
@@ -175,8 +176,8 @@ Function handle_file()
 	End If
 	
 	// 6. 删除多余数据
-	For nLineIndex = 1 To nLastLine
-		Call LazyExcel.ExcelRows(1, 1, "删除", "", Index)
+	For nLineIndex = nBeginIndex To nLastLine
+		Call LazyExcel.ExcelRows(1, nBeginIndex, "删除", "", Index)
 		Call LazyExcel.ExcelSave(Index)
 	Next
 	
@@ -189,8 +190,9 @@ Function handle_file()
 	
 	// 6_2. 关闭文件保存文件
 //	Delay 1000
-	Call LazyExcel.ExcelClose(Index)
 //	MessageBox "RowsCount :" & RowsCount & "nLastLine :" & nLastLine
+	Call LazyExcel.ExcelClose(Index)
+
 	
 	
 //	Index = LazyExcel.ExcelOpen(szTempFilePath, 1)
