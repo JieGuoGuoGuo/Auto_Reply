@@ -18,7 +18,6 @@ face_bug=None  #针对表情包的内容
 
 money_receiver = 'filehelper'
 
-
 @itchat.msg_register([TEXT, PICTURE, FRIENDS, CARD, MAP, SHARING, RECORDING, ATTACHMENT, VIDEO],isFriendChat=True, isGroupChat=True, isMpChat=True)
 def handle_receive_msg(msg):
     global face_bug
@@ -44,10 +43,10 @@ def handle_receive_msg(msg):
     # print (msg['User']['RemarkName'])
     # print('handle_receive_msg ---- >Log Test : End')
 
-    # 1. 如果发送的消息是文本或者好友推荐
-    if msg['Type'] == 'Text' or msg['Type'] == 'Friends':   
-        if touser['NickName'] != mycount:
-            print(mycount)
+    # 1. 如果发送的消息是文本
+    if msg['Type'] == 'Text':   
+        if touser['NickName'] != m_strConfigInfo['name']:
+            print(m_strConfigInfo['name'])
             print(touser['NickName'])
             print('text_reply on friend talk to me failed for to user not me')
             return
@@ -82,7 +81,13 @@ def handle_receive_msg(msg):
         
         print (msg_content)
 
-    # 2. 如果发送的消息是附件、视屏、图片、语音
+
+    # 2. 如果消息是推荐的名片
+    elif msg['Type'] == 'Friends':  
+        itchat.add_friend(**msg['Text']) # 该操作会自动将新好友的消息录入，不需要重载通讯录
+        itchat.send_msg('很高兴认识你!', msg['RecommendInfo']['UserName'])
+
+    # 3. 如果发送的消息是附件、视屏、图片、语音
     elif msg['Type'] == "Attachment" or msg['Type'] == "Video" \
             or msg['Type'] == 'Picture' \
             or msg['Type'] == 'Recording':
@@ -90,7 +95,7 @@ def handle_receive_msg(msg):
         msg['Text'](str(msg_content))    #下载文件
         # print msg_content
 
-    # 3. 如果消息是推荐的名片
+    # 4. 如果消息是推荐的名片
     elif msg['Type'] == 'Card':  
         # 内容就是推荐人的昵称和性别
         msg_content = msg['RecommendInfo']['NickName'] + '的名片'    
@@ -101,7 +106,7 @@ def handle_receive_msg(msg):
 
         print (msg_content)
 
-    # 4. 如果消息为分享的位置信息
+    # 5. 如果消息为分享的位置信息
     elif msg['Type'] == 'Map': 
         x, y, location = re.search(
             "<location x=\"(.*?)\" y=\"(.*?)\".*label=\"(.*?)\".*", msg['OriContent']).group(1, 2, 3)
@@ -110,7 +115,7 @@ def handle_receive_msg(msg):
         else:
             msg_content = r"" + location
 
-    # 5. 如果消息为分享的音乐或者文章，详细的内容为文章的标题或者是分享的名字
+    # 6. 如果消息为分享的音乐或者文章，详细的内容为文章的标题或者是分享的名字
     elif msg['Type'] == 'Sharing':
         msg_content = msg['Text']
         # 记录分享的url
@@ -194,7 +199,7 @@ def text_reply(msg):
     # print(str(int(pay_type)))
     # 这里必须得改成你的微信昵称，用于判断是别人给你转的钱
     # pay_type是交易类型：1是发送 3是接收
-    if touser['NickName'] == mycount and int(pay_type) == 1:
+    if touser['NickName'] == m_strConfigInfo['name'] and int(pay_type) == 1:
 
         # 获取金额
         # 获取转账人 转账金额
@@ -228,13 +233,42 @@ def text_reply(msg):
         itchat.send( strAnswer , msg['FromUserName'])
 
 
-#########################################
+
+""" -------------------------------------------------------------------------------------------------"""
+#                                               初始化
+""" -------------------------------------------------------------------------------------------------"""
+m_strConfigInfo       = {}
+m_szSignInPrompt    = "请确认您的登录信息: \r\n" + "------------------------------------\r\n\r\n"+"微信用户名 : %s\r\n" + "超级用户开启口令 : %s\r\n" + "超级用户确认口令 : %s\r\n" +"\r\n\r\n" + "------------------------------------\r\n"+'输入确认结果\r\n[确认]继续登录\r\n任意回复退出本次登录:\r\n'
+
+## [[ 读取初始配置文件 ]] ##
+def get_init_config():
+    import configparser 
+    conf = configparser.ConfigParser()
+    conf.read('config/conf.ini')
+    m_strConfigInfo['name']       = conf.get("init", "name")
+    m_strConfigInfo['key']        = conf.get("super", "key")
+    m_strConfigInfo['password']   = conf.get("super", "password")
+
+## [[ 确认登录信息 ]] ##
+def confirm_init_info():
+    szContent   = m_szSignInPrompt % (m_strConfigInfo['name'] ,  m_strConfigInfo['key'] , m_strConfigInfo['password'])
+    szResult    = input(szContent)
+    return szResult == '确认'
+
+""" -------------------------------------------------------------------------------------------------"""
+#                                               开始
+""" -------------------------------------------------------------------------------------------------"""
 if __name__ == '__main__':
+    get_init_config()
+    bResult = confirm_init_info()
+    if not bResult:
+        sys.exit()
+
     # 设置接收人 必须是微信号，如果是写死的可以在这儿实现
     # 并且全局变量和主函数里的变量要注释掉
     # money_receiver = 'filehelper'
     # mycount="假装有count"
-    mycount = input(r"请输入转账信息接收人昵称(如:AA_鹏鹏)>")
+    #mycount = input(r"请输入转账信息接收人昵称(如:AA_鹏鹏)>")
     # 白底黑字为-1 黑底白字为1
     # 树莓派设为2 win10设为1 大家自己测试
     # 控制台不关，可以一直运行

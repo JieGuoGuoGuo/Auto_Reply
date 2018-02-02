@@ -88,7 +88,7 @@ def analysis_data(content):
 
 
 # 读取Excel
-def excel_table_byindex(file= 'Test.xlsx'):
+def excel_table_byindex(file= 'config/Test.xlsx'):
   # 1. 打开Excel文件
   bk        = xlrd.open_workbook(file)
   shxrange  = range(bk.nsheets)

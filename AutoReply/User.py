@@ -14,14 +14,26 @@ import Talk_Step
 # 聊天间隔时间
 TALKING_INTERVAL_TIME 				= 5 * 60
 
+# 空的聊天步骤
+FREE_STP                            = [1000 , 1]
+
+# 超级用户聊天步骤
+SUPER_STP                           = [100 , 1]
+
 # 对话玩家列表
 UserList 							= {}
+
+# 超级用户列表
+m_strSuperUserList                  = {}
 
 # 总结文本
 SUMMARIZE_CONTENT 					= "请确认您的购买信息: \r\n" + "大区 	: %s\r\n" + "角色名称: %s\r\n" + "商品信息:\r\n%s"
 
 # 聊天步骤
 Talkint_Step 						= Talk_Step.Talkint_Step
+
+# 时间转换
+HOUR_SEC                            = 60 * 60
 
 #########################################
 # 逻辑处理
@@ -35,6 +47,73 @@ def get_summarize_content(szFriendName):
 # 获取当前日期的字符串
 def get_cur_date():
   return str(time.strftime("%Y-%m-%d", time.localtime()))
+
+""" -------------------------------------------------------------------------------------------------"""
+#                                               超级用户
+""" -------------------------------------------------------------------------------------------------"""
+m_strSuperConfig       = {}
+
+## [[ 读取超级用户配置文件 ]] ##
+def get_super_config():
+    import configparser 
+    conf = configparser.ConfigParser()
+    conf.read('config/conf.ini')
+    m_strSuperConfig['key']        = conf.get("super", "key")
+    m_strSuperConfig['password']   = conf.get("super", "password")
+    m_strSuperConfig['lasttime']   = conf.get("super", "lasttime")
+
+    Talkint_Step[str(SUPER_STP[0])][str(SUPER_STP[1])]['replay_content_limit'] = [m_strSuperConfig['password']]
+
+## [[ 是否触发超级用户开启条件 ]] ##
+def trigger_super_condition( szFriendName , szContent ):
+    # 1. 检测玩家的超级用户状态
+    check_super_user_status(szFriendName)
+
+    # 2. 如果玩家已经开启或者等待开启(前一步已经触发过)
+    if m_strSuperUserList[szFriendName]['is_wait'] or m_strSuperUserList[szFriendName]['is_open']:
+        return False
+
+    # 2. 如果玩家输入的口令正确
+    bRight = m_strSuperConfig['key'] == szContent
+    if bRight:
+        m_strSuperUserList[szFriendName]['is_wait'] = True
+
+    return bRight
+
+## [[ 记录超级用户 ]] ##
+def record_super_user(szFriendName):
+    m_strSuperUserList[szFriendName]['is_wait'] = False
+    m_strSuperUserList[szFriendName]['is_open'] = True
+    m_strSuperUserList[szFriendName]['over_time'] = int(time.time()) + float(m_strSuperConfig['lasttime']) * HOUR_SEC
+
+
+## [[ 重置超级用户数据 ]] ##
+def reset_super_user(szFriendName):
+    m_strSuperUserList[szFriendName] = {}
+    m_strSuperUserList[szFriendName]['is_wait'] = False
+    m_strSuperUserList[szFriendName]['is_open'] = False
+    m_strSuperUserList[szFriendName]['over_time'] = 0
+
+## [[ 判断玩家是否为超级用户 ]] ##
+def is_super_user(szFriendName):
+    if szFriendName in m_strSuperUserList and m_strSuperUserList[szFriendName]['is_open']:
+        return True
+
+    return False
+
+## [[ 检查目标玩家的超级用户状态 ]] ##
+def check_super_user_status(szFriendName):
+    # 1. 判断之前是否存在超级用户列表中
+    if szFriendName not in m_strSuperUserList:
+        reset_super_user(szFriendName)
+        return
+
+    # 2. 如果玩家的超级用户时间到期
+    if 'over_time' not in m_strSuperUserList[szFriendName] or m_strSuperUserList[szFriendName]['over_time'] <= int(time.time()):
+        reset_super_user(szFriendName)
+        return
+
+    return False
 
 
 """ -------------------------------------------------------------------------------------------------"""
@@ -269,13 +348,14 @@ def get_after_handle_error_step( nFirstStep , nSecondStep ):
 
 
 ## [[ 获取当前聊天步骤的下一步 ]] ##
+# @param       szFriendName        玩家名字
 # @param       nFirstStep          当前聊天大步骤
 # @param       nSecondStep         当前聊天小步骤
 # @param       bCurCheckResult     当前聊天步骤是否异常
 # @param       szTalkingContent    玩家回复内容
 # @return      bool , int , int    参数一为是否获取到下一步骤,参数二为下一步的大步骤,参数三为下一步的小步骤
 # end --
-def get_next_step( nFirstStep , nSecondStep , bCurCheckResult , szTalkingContent ):
+def get_next_step( szFriendName , nFirstStep , nSecondStep , bCurCheckResult , szTalkingContent ):
   # 1. 获取当前的聊天步骤
   if check_step(nFirstStep , nSecondStep) != 1:
     print(r"get_next_step failed for the wrong step : First{%s} , second{%s}" % (str(nFirstStep) , str(nSecondStep)))
@@ -291,14 +371,17 @@ def get_next_step( nFirstStep , nSecondStep , bCurCheckResult , szTalkingContent
 
   # 3_2. 如果没有特殊需求则选择默认步骤
   nNextFirstStep 			= strNextStepList['default'][0]
-  nNextSecondStep 		= strNextStepList['default'][1]
+  nNextSecondStep 		    = strNextStepList['default'][1]
 
   # 3_1. 如果是根据玩家的回复决定下一步
   if Talkint_Step[str(nFirstStep)][str(nSecondStep)]['replay_content_type'] == 3:
 
   # 3_1_2. 根据玩家的回复获取下一步内容(回复内容是否在限制列表中,在上面已经处理过)
-    nNextFirstStep 			= strNextStepList[szTalkingContent][0]
-    nNextSecondStep 		= strNextStepList[szTalkingContent][1]
+    nNextFirstStep 			= strNextStepList[szTalkingContent]['default'][0]
+    nNextSecondStep 		= strNextStepList[szTalkingContent]['default'][1]
+    if 'super' in strNextStepList[szTalkingContent] and is_super_user(szFriendName):
+        nNextFirstStep 			= strNextStepList[szTalkingContent]['super'][0]
+        nNextSecondStep 		= strNextStepList[szTalkingContent]['super'][1]
 
   # 4. 判断下一步聊天步骤是否异常
   # 4_1. 如果下一步聊天步骤异常
@@ -317,9 +400,13 @@ def get_next_step( nFirstStep , nSecondStep , bCurCheckResult , szTalkingContent
 # < 1 > 
 # 重置目标玩家的对话步骤
 def reset_talking_step(szFriendName):
-	UserList[szFriendName]['step'] 					         = {}
-	UserList[szFriendName]['step']['first_step'] 	   = 0			# 大步骤
-	UserList[szFriendName]['step']['second_step'] 	 = 1			# 小步骤
+    UserList[szFriendName]['step'] 					         = {}
+    UserList[szFriendName]['step']['first_step'] 	   = 0			# 大步骤
+    UserList[szFriendName]['step']['second_step'] 	 = 1			# 小步骤
+    UserList[szFriendName]['temp_step'] 					         = {}
+    UserList[szFriendName]['temp_step']['first_step']    = 0
+    UserList[szFriendName]['temp_step']['second_step']    = 0
+
 
 # 重置目标玩家的游戏购买信息
 def reset_game_purchase_info( szFriendName ):
@@ -330,7 +417,7 @@ def reset_game_purchase_info( szFriendName ):
   UserList[szFriendName]['game_purchase_info']['item_answer']		= ''		# 购买商品回复信息
   UserList[szFriendName]['game_purchase_info']['all_cost']      = 0    # 商品总计应付金额
   UserList[szFriendName]['game_purchase_info']['friend_pay']    = 0    # 玩家实际支付的金额
-
+  
 
 # 重置玩家的信息
 def reset_friend_info( strData ):
@@ -345,10 +432,13 @@ def reset_friend_info( strData ):
 	# 3. 重置玩家微信名称
 	UserList[szFriendName]['wechat_name']			= strData['szUserName']
 
-	# 4. 重置目标玩家的对话步骤
+    # 4. 重置玩家是否为超级用户
+    #UserList[szFriendName]['is_super']		        = False
+
+	# 5. 重置目标玩家的对话步骤
 	reset_talking_step(szFriendName)
 
-	# 5. 重置目标玩家的游戏购买信息
+	# 6. 重置目标玩家的游戏购买信息
 	reset_game_purchase_info(szFriendName)
 
 
@@ -378,21 +468,40 @@ def friend_talk_to_me( strMsgData ):
     print(r'friend_talk_to_me reset for his step not exist  , name is {%s}'%(szFriendName))
     reset_friend_info(strMsgData)
 
-  nCurFirstStep   = UserList[szFriendName]['step']['first_step']
-  nCurSecondSetp  = UserList[szFriendName]['step']['second_step']
+  # 4. 检测玩家的超级用户状态
+  check_super_user_status(szFriendName)
 
+  # 5. 判断玩家当前对话是否满足触发超级用户条件
+  nCurFirstStep   = 0
+  nCurSecondSetp  = 0
+  strData   = None
 
-  # print(r"nCurFirstStep : First{%s} , nCurSecondSetp{%s}" % (str(nCurFirstStep) , str(nCurSecondSetp)))
+  # 5_1. 如果玩家触发了超级用户开启条件
+  if trigger_super_condition(szFriendName , szTalkingContent):
+      strData = (True , SUPER_STP[0] , SUPER_STP[1])
 
-  # 4. 判断玩家当前步骤是否异常
-  bCurResult      = check_cur_step(szFriendName , nCurFirstStep , nCurSecondSetp , szTalkingContent , nFriendPay)
+      nCurFirstStep = FREE_STP[0]
+      nCurSecondSetp = FREE_STP[1]
 
-  # 5. 获取下一步信息
-  strData         = get_next_step(nCurFirstStep , nCurSecondSetp , bCurResult , szTalkingContent)
-  if not strData[0]:
-    reset_friend_info(strMsgData)
-    szAnswer      = szAnswer + ' : 1' + str(nCurFirstStep) + '  ' + str(nCurSecondSetp)
-    return szAnswer
+      UserList[szFriendName]['temp_step']['first_step']  = UserList[szFriendName]['step']['first_step']
+      UserList[szFriendName]['temp_step']['second_step'] = UserList[szFriendName]['step']['second_step']
+
+      UserList[szFriendName]['step']['first_step']  = nCurFirstStep
+      UserList[szFriendName]['step']['second_step'] = nCurSecondSetp
+
+  else:
+    nCurFirstStep   = UserList[szFriendName]['step']['first_step']
+    nCurSecondSetp  = UserList[szFriendName]['step']['second_step']
+
+    # 6. 判断玩家当前步骤是否异常
+    bCurResult      = check_cur_step(szFriendName , nCurFirstStep , nCurSecondSetp , szTalkingContent , nFriendPay)
+
+    # 7. 获取下一步信息
+    strData         = get_next_step(szFriendName , nCurFirstStep , nCurSecondSetp , bCurResult , szTalkingContent)
+    if not strData[0]:
+      reset_friend_info(strMsgData)
+      szAnswer      = szAnswer + ' : 1' + str(nCurFirstStep) + '  ' + str(nCurSecondSetp)
+      return szAnswer
 
   # ------------------------------------
   # 条件满足
@@ -438,20 +547,36 @@ def friend_talk_to_me( strMsgData ):
   elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['special_handle'] == 3:
     UserList[szFriendName]['game_purchase_info']['friend_pay']    = nFriendPay
 
-  # 3_4. 其它的暂不处理
+  # 3_4. 如果还原玩家的步骤
+  elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['special_handle'] == 4:
+    strData = (True , UserList[szFriendName]['temp_step']['first_step'] , UserList[szFriendName]['temp_step']['second_step'])
+
+    UserList[szFriendName]['step']['first_step']  = UserList[szFriendName]['temp_step']['first_step']
+    UserList[szFriendName]['step']['second_step'] = UserList[szFriendName]['temp_step']['second_step']
+
+  # 3_5. 其它的暂不处理
   else:
     pass
 
-  # 4. 记录步骤数据
+  # 4. 超级用户处理
+  # 4_1. 如果当前步骤为确认开启超级用户成功
+  if Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['super_handle'] == 1:
+    record_super_user(szFriendName)
+
+  # 4_2. 如果当前步骤为确认开启超级用户成功
+  elif Talkint_Step[str(nCurFirstStep)][str(nCurSecondSetp)]['super_handle'] == 2:
+    reset_super_user(szFriendName)
+
+  # 5. 记录步骤数据
   UserList[szFriendName]['step']['first_step']   = strData[1]
   UserList[szFriendName]['step']['second_step']  = strData[2]
 
   # print(r"nNextFirstStep : First{%s} , nNextSecondSetp{%s}" % (str(strData[1]) , str(strData[2])))
 
-  # 5. 记录聊天时间
+  # 6. 记录聊天时间
   UserList[szFriendName]['msg_time']				= nMsgTime
 
-  # 6. 返回结果
+  # 7. 返回结果
   return szAnswer
 
   
@@ -460,6 +585,7 @@ def friend_talk_to_me( strMsgData ):
 #########################################
 # 主函数
 def Init():
+  get_super_config()
   print('User:Init')
 
 
